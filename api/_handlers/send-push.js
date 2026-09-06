@@ -50,14 +50,6 @@ async function collectAdminTokens(db, excludeUid) {
 }
 
 function androidPayloadFor(data) {
-  // DM notifications are intentionally data-only: they're built manually by
-  // DmReplyMessagingService.kt (native, see resources/android/native-src/)
-  // so it can add the inline "Reply" action. If Android also gets a
-  // `notification` block here, the OS auto-displays its own generic
-  // notification for background/killed apps and never calls
-  // onMessageReceived() at all — which is exactly what silently killed the
-  // reply button. Every other type has no custom native handler, so they
-  // still want the auto-display `notification` block.
   if (data.type === "dm") return { priority: "high" };
   return { priority: "high", notification: { title: data.title, body: data.body } };
 }
