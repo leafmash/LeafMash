@@ -50,7 +50,6 @@ async function collectAdminTokens(db, excludeUid) {
 }
 
 function androidPayloadFor(data) {
-  if (data.type === "dm") return { priority: "high" };
   return { priority: "high", notification: { title: data.title, body: data.body } };
 }
 
