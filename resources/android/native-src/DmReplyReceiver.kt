@@ -56,12 +56,14 @@ class DmReplyReceiver : BroadcastReceiver() {
             .setSmallIcon(DmReplyMessagingService.resolveIcon(context))
             .setStyle(DmReplyMessagingService.buildMessagingStyle(context, conversationId, conversationTitle))
             .setAutoCancel(true)
-            .setContentIntent(DmReplyMessagingService.buildOpenPendingIntent(context, notificationId, "/#dm-thread?id=$targetUid"))
+            .setContentIntent(DmReplyMessagingService.buildOpenPendingIntent(context, notificationId, conversationId, "/#dm-thread?id=$targetUid"))
             .addAction(DmReplyMessagingService.buildReplyAction(context, conversationId, targetUid, notificationId))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
 
         NotificationManagerCompat.from(context).notify(notificationId, notification)
+
+        DmConversationStore.clear(context, conversationId)
 
         enqueueSendWorker(context, targetUid, notificationId, replyText)
     }

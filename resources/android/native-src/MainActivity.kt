@@ -16,13 +16,21 @@ class MainActivity : BridgeActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        clearConversationHistory(intent)
         val url = extractUrl(intent) ?: return
         val escaped = escapeForJs(url)
         bridge?.triggerJSEvent("leafmashNotificationTap", "window", "\"$escaped\"")
     }
 
     private fun capturePendingDeepLink(intent: Intent?) {
+        clearConversationHistory(intent)
         pendingDeepLink = extractUrl(intent)
+    }
+
+    private fun clearConversationHistory(intent: Intent?) {
+        val conversationId = intent?.getStringExtra("leafmash_conversation_id") ?: return
+        intent.removeExtra("leafmash_conversation_id")
+        DmConversationStore.clear(applicationContext, conversationId)
     }
 
     private fun extractUrl(intent: Intent?): String? {

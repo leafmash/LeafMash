@@ -54,7 +54,7 @@ class DmReplyMessagingService : MessagingService() {
             .setSmallIcon(resolveIcon(context))
             .setStyle(buildMessagingStyle(context, conversationId, senderName))
             .setAutoCancel(true)
-            .setContentIntent(buildOpenPendingIntent(context, notificationId, data["url"] ?: "/#message"))
+            .setContentIntent(buildOpenPendingIntent(context, notificationId, conversationId, data["url"] ?: "/#message"))
             .addAction(buildReplyAction(context, conversationId, senderUid, notificationId))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
@@ -101,9 +101,10 @@ class DmReplyMessagingService : MessagingService() {
             ).addRemoteInput(remoteInput).setAllowGeneratedReplies(true).build()
         }
 
-        fun buildOpenPendingIntent(context: Context, notificationId: Int, url: String): PendingIntent {
+        fun buildOpenPendingIntent(context: Context, notificationId: Int, conversationId: String, url: String): PendingIntent {
             val openIntent = Intent(context, MainActivity::class.java).apply {
                 putExtra("leafmash_url", url)
+                putExtra("leafmash_conversation_id", conversationId)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
             return PendingIntent.getActivity(
