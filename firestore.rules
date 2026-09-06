@@ -38,7 +38,8 @@ service cloud.firestore {
       // these rules) via /api/create-profile and /api/resolve-profile.
       // Direct client-side creates are never allowed.
       allow create: if false;
-      allow update: if isOwner(uid) && onlyChangedFields(["lastActive"]);
+      allow update: if (isOwner(uid) && onlyChangedFields(["lastActive"])) ||
+        (isAdmin() && onlyChangedFields(["verified"]));
       allow delete: if false;
 
       match /private/{docId} {

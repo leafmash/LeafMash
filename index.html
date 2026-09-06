@@ -2239,6 +2239,19 @@
         </div>
       </section>
 
+      <section id="section-admin-verified" class="route-section">
+        <div class="notif-panel-head">
+          <span class="notif-panel-head-title">Verified Badge</span>
+        </div>
+        <div class="search-bar">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="admin-verified-search" placeholder="Search by name or roll…" />
+        </div>
+        <div id="admin-verified-list" class="flat-list">
+          <p class="empty-state">No one has a verified badge yet. Search above to give one.</p>
+        </div>
+      </section>
+
       <section id="section-settings" class="route-section">
         <div class="settings-page">
           <div class="quick-links-block">
@@ -2261,6 +2274,12 @@
                   <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="3"/></svg>
                 </span>
                 <small>Reports<span class="tab-badge hidden" id="admin-reports-badge">0</span></small>
+              </button>
+              <button type="button" class="nav-item quick-link-tile" id="admin-verified-tile" data-route="admin-verified">
+                <span class="quick-link-tile-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M23 12l-2.44-2.79.34-3.69-3.61-.82-1.89-3.2L12 2.96 8.6 1.5 6.71 4.69 3.1 5.5l.34 3.7L1 12l2.44 2.79-.34 3.7 3.61.82L8.6 22.5l3.4-1.47 3.4 1.46 1.89-3.19 3.61-.82-.34-3.69L23 12z"/><path d="M8.6 12.3l2.2 2.2 4.6-4.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <small>Verified Badge</small>
               </button>
             </div>
           </div>
