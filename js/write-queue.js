@@ -53,8 +53,11 @@ export async function countPendingWrites() {
 
 const handlers = new Map();
 
-export function registerWriteHandler(kind, handler) {
-  handlers.set(kind, handler);
+// onDropped(payload, err) is called when a queued write is permanently
+// discarded after a non-network error (e.g. validation failure) — lets the
+// caller clean up any optimistic UI it showed for that write.
+export function registerWriteHandler(kind, handler, onDropped) {
+  handlers.set(kind, { handler, onDropped });
 }
 
 export function isNetworkError(err) {
@@ -77,15 +80,16 @@ export async function syncPendingWrites() {
       const writes = await getAllWrites();
       for (const w of writes) {
         if (typeof navigator !== "undefined" && navigator.onLine === false) return; 
-        const handler = handlers.get(w.kind);
-        if (!handler) { await removeWrite(w.id); continue; } 
+        const entry = handlers.get(w.kind);
+        if (!entry) { await removeWrite(w.id); continue; } 
         try {
-          await handler(w.payload);
+          await entry.handler(w.payload);
           await removeWrite(w.id);
         } catch (err) {
           if (isNetworkError(err)) return; 
           await removeWrite(w.id); 
           console.error(`leafmash write-queue: dropped a queued "${w.kind}" write after a non-network failure`, err);
+          entry.onDropped?.(w.payload, err);
         }
       }
     } while (resyncRequested);

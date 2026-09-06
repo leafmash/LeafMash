@@ -130,19 +130,25 @@ let featuresInitialized = false;
 
 let isColdStart = false;
 
+// Resolves as soon as the FIRST snapshot arrives, whether it came from the
+// local cache or the server. This is what makes the app feel instant online
+// AND offline: show whatever we already have immediately, then let the
+// onSnapshot listener silently refresh the UI once the server responds.
+// (Previously this waited for a guaranteed server round-trip on every cold
+// start, which is what made online loads slow — and on a weak connection
+// that wait could time out before markSessionEstablished() ever ran, so the
+// next launch was treated as a cold start again too, repeating forever.)
 function waitForTrustedSnapshot(initFn, timeoutMs = 12000) {
   return new Promise((resolve) => {
     let settled = false;
     const timer = setTimeout(() => {
-      if (!settled) { settled = true; resolve(false); }
+      if (!settled) { settled = true; resolve(true); }
     }, timeoutMs);
-    initFn((snap) => {
+    initFn(() => {
       if (settled) return;
-      if (!isColdStart || snap.metadata.fromCache === false) {
-        settled = true;
-        clearTimeout(timer);
-        resolve(true);
-      }
+      settled = true;
+      clearTimeout(timer);
+      resolve(true);
     });
   });
 }

@@ -153,6 +153,11 @@ let hasMoreOlder = true;
 let loadingOlder = false; 
 let wallScrollObserver = null;
 
+// Optimistic posts: shown in the feed immediately on submit, before the
+// server confirms them. Each entry is removed once the real post either
+// lands (success) or is permanently dropped (non-network failure).
+let pendingPosts = [];
+
 const POST_TEXT_LIMIT = 3000;
 
 export function authorProfile(uid, fallbackName) {
@@ -192,12 +197,14 @@ function subscribeWall(onSnapshotReceived) {
 }
 
 function renderWallList() {
-  if (!liveDocs.length && !olderDocs.length) {
+  if (!liveDocs.length && !olderDocs.length && !pendingPosts.length) {
     wallList.innerHTML = `<p class="empty-state">No posts yet. Be the first to write on the wall.</p>`;
     return;
   }
   wallList.innerHTML = `<div class="flat-list feed-list"></div>`;
   const listEl = wallList.querySelector(".feed-list");
+  [...pendingPosts].sort((a, b) => b.createdAtMs - a.createdAtMs)
+    .forEach((pending) => renderPendingPost(pending, listEl));
   const docs = [...liveDocs, ...olderDocs].sort((a, b) => (b.data().pinned ? 1 : 0) - (a.data().pinned ? 1 : 0));
   docs.forEach((docSnap) => renderPost(docSnap.id, docSnap.data(), listEl, { onChanged: () => refreshStaticPost(docSnap.id) }));
 
@@ -214,6 +221,76 @@ function renderWallList() {
   } else if (docs.length) {
     wallList.insertAdjacentHTML("beforeend", `<p class="wall-feed-end">You're all caught up 🌿</p>`);
   }
+}
+
+function makeClientId() {
+  return "p_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+}
+
+function addPendingPost({ text, mentions, poll, files, authorName }) {
+  const author = currentProfile || { name: authorName };
+  const pending = {
+    clientId: makeClientId(),
+    text, mentions, poll,
+    authorUid: auth.currentUser.uid,
+    authorName: author.name || authorName,
+    authorEmail: author.email,
+    previewUrls: (files || []).map((f) => URL.createObjectURL(f)),
+    createdAtMs: Date.now(),
+    status: "sending"
+  };
+  pendingPosts.push(pending);
+  renderWallList();
+  return pending.clientId;
+}
+
+function updatePendingPost(clientId, status) {
+  const pending = pendingPosts.find((p) => p.clientId === clientId);
+  if (!pending) return;
+  pending.status = status;
+  renderWallList();
+}
+
+function removePendingPost(clientId) {
+  const pending = pendingPosts.find((p) => p.clientId === clientId);
+  if (pending) (pending.previewUrls || []).forEach((url) => URL.revokeObjectURL(url));
+  pendingPosts = pendingPosts.filter((p) => p.clientId !== clientId);
+  renderWallList();
+}
+
+function renderPendingPost(pending, listEl) {
+  const author = authorProfile(pending.authorUid, pending.authorName);
+  const el = document.createElement("article");
+  el.className = "feed-post feed-post-pending" + (pending.status === "failed" ? " cursor-pointer" : "");
+  el.dataset.clientId = pending.clientId;
+
+  const statusLabel = pending.status === "queued"
+    ? "Waiting for connection — will send automatically"
+    : pending.status === "failed"
+    ? "Couldn't send this post — tap to remove"
+    : "Sending…";
+
+  el.innerHTML = `
+    <div class="post-head">
+      <span class="avatar-presence-wrap">
+        <span class="avatar">${avatarInner(author)}</span>
+      </span>
+      <div class="post-meta">
+        <span class="post-author-name">${nameWithBadge(pending.authorName, pending.authorEmail)}</span>
+        <small class="pending-status">
+          ${pending.status === "sending" ? `<span class="btn-spinner dark" aria-hidden="true"></span> ` : ""}${escapeHtml(statusLabel)}
+        </small>
+      </div>
+    </div>
+    ${clampableRichHtml(pending.text, pending.mentions, "post-text")}
+    ${postImagesHtml(pending.previewUrls)}
+  `;
+
+  if (pending.status === "failed") {
+    el.addEventListener("click", () => removePendingPost(pending.clientId));
+  }
+
+  listEl.appendChild(el);
 }
 
 export async function refreshWall() {
@@ -393,41 +470,44 @@ async function handleCreatePost(getImageFiles, getMentions, getPoll) {
   const mentions = getMentions ? getMentions() : [];
   const files = getImageFiles ? getImageFiles() : [];
 
+  closeModal();
+  // Show it in the feed right away — the server hasn't confirmed anything yet.
+  const clientId = addPendingPost({ text, mentions, poll, files, authorName: currentProfile.name });
+
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
-    await queuePost({ text, images: files, mentions, poll, authorName: currentProfile.name });
-    closeModal();
+    await queuePost({ text, images: files, mentions, poll, authorName: currentProfile.name, clientId });
+    updatePendingPost(clientId, "queued");
     showToast("You're offline — this post will send automatically once you're back online.");
     return;
   }
 
-  closeModal();
-  setComposerPosting(true);
   try {
     let images = [];
     if (files.length) {
       images = await uploadImages(files, { maxDim: 1600, quality: 0.78, folder: "leafmash/posts" });
     }
     const { id: postId } = await callApi("create-post", { text, images, mentions, poll });
+    removePendingPost(clientId);
     showToast("Posted to the Student Wall.");
     logActivity({ type: "post", text, postId });
     triggerPush({ type: "post", text, actorName: currentProfile.name, postId });
     notifyMentions(mentions, text, postId);
   } catch (err) {
     if (isNetworkError(err)) {
-      await queuePost({ text, images: files, mentions, poll, authorName: currentProfile.name });
+      await queuePost({ text, images: files, mentions, poll, authorName: currentProfile.name, clientId });
+      updatePendingPost(clientId, "queued");
       showToast("Couldn't reach the network — this post is queued and will send automatically once you're back online.");
     } else {
+      removePendingPost(clientId);
       const { message, technical } = friendlyError(err, "Couldn't publish your post.");
       showToast(message, { details: technical });
       openComposerModal({ text, mentions, poll, files });
     }
-  } finally {
-    setComposerPosting(false);
   }
 }
 
-function queuePost({ text, images, mentions, poll, authorName }) {
-  return enqueueWrite("create-post", { text, images, mentions, poll, authorName });
+function queuePost({ text, images, mentions, poll, authorName, clientId }) {
+  return enqueueWrite("create-post", { text, images, mentions, poll, authorName, clientId });
 }
 
 registerWriteHandler("create-post", async (payload) => {
@@ -438,10 +518,14 @@ registerWriteHandler("create-post", async (payload) => {
   const { id: postId } = await callApi("create-post", {
     text: payload.text, images, mentions: payload.mentions, poll: payload.poll
   }, { skipClientCooldown: true });
+  if (payload.clientId) removePendingPost(payload.clientId);
   showToast("A queued post just went out to the Student Wall.");
   logActivity({ type: "post", text: payload.text, postId });
   triggerPush({ type: "post", text: payload.text, actorName: payload.authorName, postId });
   notifyMentions(payload.mentions, payload.text, postId);
+}, (payload) => {
+  if (payload.clientId) updatePendingPost(payload.clientId, "failed");
+  showToast("A queued post couldn't be sent and was removed.");
 });
 
 function notifyMentions(mentions, text, postId) {
