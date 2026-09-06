@@ -1,6 +1,6 @@
 import { ApiError } from "./errors.js";
 
-const CLOUDINARY_CLOUD = "s9htrtz2"; 
+const CLOUDINARY_CLOUD = "xreqa1wz"; 
 export function requiredText(value, field, maxLen) {
   const s = typeof value === "string" ? value.trim() : "";
   if (!s) throw new ApiError(400, `${field} is required.`);
