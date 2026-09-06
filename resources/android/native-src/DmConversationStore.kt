@@ -54,8 +54,29 @@ object DmConversationStore {
         return prefs.getString("$conversationId:photo", "") ?: ""
     }
 
+    fun incrementUnread(context: Context, conversationId: String): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val next = prefs.getInt("$conversationId:unread", 0) + 1
+        prefs.edit().putInt("$conversationId:unread", next).apply()
+        return next
+    }
+
+    fun getUnreadCount(context: Context, conversationId: String): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt("$conversationId:unread", 0)
+    }
+
+    fun resetUnread(context: Context, conversationId: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().remove("$conversationId:unread").apply()
+    }
+
     fun clear(context: Context, conversationId: String) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().remove(conversationId).remove("$conversationId:photo").apply()
+        prefs.edit()
+            .remove(conversationId)
+            .remove("$conversationId:photo")
+            .remove("$conversationId:unread")
+            .apply()
     }
 }

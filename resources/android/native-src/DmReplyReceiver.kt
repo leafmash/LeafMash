@@ -48,6 +48,7 @@ class DmReplyReceiver : BroadcastReceiver() {
         )
 
         DmReplyMessagingService.ensureChannel(context)
+        DmConversationStore.resetUnread(context, conversationId)
 
         val conversationTitle = DmConversationStore.getMessages(context, conversationId)
             .lastOrNull { !it.fromMe }?.senderName ?: "LeafMash"
@@ -59,12 +60,12 @@ class DmReplyReceiver : BroadcastReceiver() {
             .setContentIntent(DmReplyMessagingService.buildOpenPendingIntent(context, notificationId, conversationId, "/#dm-thread?id=$targetUid"))
             .addAction(DmReplyMessagingService.buildReplyAction(context, conversationId, targetUid, notificationId))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setNumber(0)
+            .setSilent(true)
             .setShortcutId(conversationId)
             .build()
 
         NotificationManagerCompat.from(context).notify(notificationId, notification)
-
-        DmConversationStore.clear(context, conversationId)
 
         enqueueSendWorker(context, targetUid, notificationId, replyText)
     }

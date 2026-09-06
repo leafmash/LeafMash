@@ -50,6 +50,7 @@ class DmReplyMessagingService : MessagingService() {
         if (senderPhotoURL.isNotBlank()) {
             DmConversationStore.setSenderPhotoUrl(context, conversationId, senderPhotoURL)
         }
+        val unreadCount = DmConversationStore.incrementUnread(context, conversationId)
 
         ensureChannel(context)
 
@@ -60,6 +61,7 @@ class DmReplyMessagingService : MessagingService() {
             .setContentIntent(buildOpenPendingIntent(context, notificationId, conversationId, data["url"] ?: "/#message"))
             .addAction(buildReplyAction(context, conversationId, senderUid, notificationId))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setNumber(unreadCount)
             .setShortcutId(conversationId)
             .build()
 
@@ -123,7 +125,7 @@ class DmReplyMessagingService : MessagingService() {
             val mePerson = Person.Builder().setName("You").build()
             val style = NotificationCompat.MessagingStyle(mePerson)
                 .setConversationTitle(conversationTitle)
-                .setGroupConversation(false)
+                .setGroupConversation(true)
 
             val photoUrl = DmConversationStore.getSenderPhotoUrl(context, conversationId)
             val otherIcon = DmAvatarLoader.load(photoUrl)
