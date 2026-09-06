@@ -1014,6 +1014,10 @@
   .poll-total-votes { @apply text-[.72rem] font-bold uppercase tracking-wide; color: var(--color-ink-faint); font-family: var(--font-mono); }
 
   .feed-post-pinned { border:1px solid var(--color-gold-300); }
+  .feed-post-pending { opacity:.65; }
+  .feed-post-pending::before { background: var(--color-line); }
+  .feed-post-pending::after { display:none; }
+  .pending-status { @apply flex items-center gap-1.5 normal-case tracking-normal font-semibold; font-family:inherit; }
 
   .hashtag-result-row { @apply items-center; }
   .hashtag-result-snippet { @apply block truncate; color: var(--color-ink-faint); max-width:220px; }
@@ -1211,11 +1215,13 @@
 
   .directory-row {
     @apply flex items-center gap-3 w-full text-left bg-surface transition-colors rounded-[14px] shadow-[var(--shadow-card)];
-    padding:12px 14px; border:1px solid var(--color-line); cursor:pointer;
+    padding:12px 14px; border:1px solid var(--color-line); cursor:pointer; flex-wrap:nowrap;
   }
   @media (hover:hover) { .directory-row:hover { box-shadow: var(--shadow-cardhover); } }
   .directory-row:active { background: var(--color-paper-deep); }
   .directory-info { @apply flex-1 min-w-0; }
+  .directory-info strong { @apply block truncate; }
+  .directory-info .directory-sub { @apply truncate; }
   .directory-info strong { @apply block text-[.92rem]; }
   .directory-info .directory-sub { @apply inline-flex items-center gap-1 text-[.74rem] mt-0.5 font-bold rounded-md; color: var(--color-forest-700); background: var(--color-forest-50); padding:2px 7px; font-family: var(--font-mono); }
   .blood-badge {
@@ -1461,7 +1467,7 @@
   .switch-row > span:first-child { @apply text-[.84rem] font-semibold leading-snug; color: var(--color-ink); }
   .switch-row small { @apply font-medium; color: var(--color-ink-faint); }
   .switch-row input { @apply absolute opacity-0 w-0 h-0; }
-  .switch-track { @apply shrink-0 relative rounded-full transition-colors; width:42px; height:24px; background: var(--color-line); }
+  .switch-track { @apply shrink-0 relative rounded-full transition-colors; display:inline-block; width:42px; height:24px; background: var(--color-line); }
   .switch-thumb { @apply absolute rounded-full bg-white transition-transform; top:2px; left:2px; width:20px; height:20px; box-shadow:0 1px 3px rgba(0,0,0,.25); }
   .switch-row input:checked + .switch-track { background: var(--color-forest-600); }
   .switch-row input:checked + .switch-track .switch-thumb { transform:translateX(18px); }
@@ -1621,7 +1627,7 @@
   .settings-row-text small { @apply text-[.74rem] mt-0.5 leading-snug; color: var(--color-ink-faint); }
   .settings-row-chevron { @apply shrink-0; color: var(--color-ink-faint); }
   .settings-row-switch { @apply cursor-default; }
-  .settings-toggle { @apply relative shrink-0 cursor-pointer; }
+  .settings-toggle { @apply relative shrink-0 cursor-pointer; display:inline-flex; }
   .settings-toggle input { @apply absolute opacity-0 w-0 h-0; }
   .settings-toggle input:checked + .switch-track { background: var(--color-forest-600); }
   .settings-toggle input:checked + .switch-track .switch-thumb { transform:translateX(18px); }
