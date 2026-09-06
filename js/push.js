@@ -112,10 +112,14 @@ export function registerNotificationTapHandler(onTap) {
     window.addEventListener("leafmashNotificationTap", (event) => {
       if (event.detail) onTap(event.detail);
     });
-    // Flush any tap that arrived before this listener was attached
-    // (cold start on Android — see the buffering script in index.html).
     if (window.__leafmashPendingDeepLinks?.length) {
       window.__leafmashPendingDeepLinks.splice(0).forEach(onTap);
+    }
+    const LeafMashDeepLink = window.Capacitor?.Plugins?.LeafMashDeepLink;
+    if (LeafMashDeepLink) {
+      LeafMashDeepLink.getPending()
+        .then(({ url }) => { if (url) onTap(url); })
+        .catch(() => {});
     }
     return;
   }
