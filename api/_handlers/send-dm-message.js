@@ -103,7 +103,9 @@ export async function sendDmMessage(req, res) {
       lastMessageText: text.length > 140 ? text.slice(0, 140) + "…" : text,
       lastMessageAt: FieldValue.serverTimestamp(),
       lastSenderUid: uid,
-      [`unread.${otherUid}`]: FieldValue.increment(1)
+      [`unread.${otherUid}`]: FieldValue.increment(1),
+      [`unread.${uid}`]: 0,
+      [`lastReadAt.${uid}`]: FieldValue.serverTimestamp()
     });
 
     const senderName = meSnap.get("name") || "";
