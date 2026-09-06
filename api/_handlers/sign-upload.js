@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { getAdminApp, verifyCaller, requirePost, sendError, ApiError, enforceRateLimit } from "../_lib/adminApp.js";
 import { getFirestore } from "firebase-admin/firestore";
 
-const CLOUD_NAME = "s9htrtz2";
+const CLOUD_NAME = "xreqa1wz";
 const UPLOAD_PRESET = "LeafMash";
 const ALLOWED_FOLDERS = new Set(["leafmash/avatars", "leafmash/posts", "leafmash/resources"]);
 
