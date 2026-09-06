@@ -986,14 +986,20 @@ watchAuthState(
       openProfileDetailsModal(true);
     }
 
-    setLoadingProgress(92);
-    const [wallConfirmed, directoryConfirmed] = await Promise.all([wallReady, directoryReady]);
-    if (isColdStart && wallConfirmed && directoryConfirmed) {
-      markSessionEstablished();
-    }
-
+    // Facebook-style: reveal the app shell right away instead of blocking
+    // on the network/cache. Each section (Wall, Directory, ...) already
+    // shows its own skeleton and fills itself in as its listener reports
+    // data, so there's nothing left for a full-screen loader to wait for.
     setLoadingProgress(100); 
     setTimeout(hideLoadingScreen, LOADING_MIN_DISPLAY_MS);
+
+    // Cold-start bookkeeping still happens, just quietly in the background —
+    // it no longer keeps the UI waiting.
+    Promise.all([wallReady, directoryReady]).then(([wallConfirmed, directoryConfirmed]) => {
+      if (isColdStart && wallConfirmed && directoryConfirmed) {
+        markSessionEstablished();
+      }
+    });
   },
   () => {
     appShell.classList.add("hidden");
