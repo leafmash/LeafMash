@@ -27,6 +27,7 @@ import { uploadImage } from "./cloudinary.js";
 import { isAcceptableImageFile, openImageViewer } from "./media-picker.js";
 import { openImageCropper } from "./image-cropper.js";
 import { initPush, unregisterPushToken, registerNotificationTapHandler } from "./push.js";
+import { initBatteryOptimizationPrompt } from "./battery-optimization.js";
 import { getThemePreference, setThemePreference, initTheme } from "./theme.js";
 
 const CapApp = window.Capacitor?.Plugins?.App;
@@ -982,6 +983,7 @@ watchAuthState(
     }
     restoreRouteFromHash();
     initPush({ requestPermission: true });
+    initBatteryOptimizationPrompt();
     if (profile && profile.profileIncomplete) {
       openProfileDetailsModal(true);
     }
