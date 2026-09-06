@@ -11,22 +11,29 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.Person
 import androidx.core.app.RemoteInput
 import com.google.firebase.messaging.RemoteMessage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import PLUGIN_MESSAGING_SERVICE_IMPORT
 
 class DmReplyMessagingService : MessagingService() {
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
         val data = remoteMessage.data
         if (data["type"] != "dm") return
-        showReplyNotification(data)
+        val context = applicationContext
+        serviceScope.launch { showReplyNotification(context, data) }
     }
 
-    private fun showReplyNotification(data: Map<String, String>) {
-        val context = applicationContext
+    private suspend fun showReplyNotification(context: Context, data: Map<String, String>) {
         val conversationId = data["conversationId"] ?: return
         val senderUid = data["senderUid"] ?: return
         val senderName = data["senderName"]?.takeIf { it.isNotBlank() } ?: (data["title"] ?: "LeafMash")
+        val senderPhotoURL = data["senderPhotoURL"] ?: ""
         val notificationId = conversationId.hashCode()
 
         DmConversationStore.addMessage(
@@ -37,6 +44,9 @@ class DmReplyMessagingService : MessagingService() {
             senderName = senderName,
             timestamp = System.currentTimeMillis()
         )
+        if (senderPhotoURL.isNotBlank()) {
+            DmConversationStore.setSenderPhotoUrl(context, conversationId, senderPhotoURL)
+        }
 
         ensureChannel(context)
 
@@ -104,14 +114,20 @@ class DmReplyMessagingService : MessagingService() {
             )
         }
 
-        fun buildMessagingStyle(context: Context, conversationId: String, conversationTitle: String): NotificationCompat.MessagingStyle {
+        suspend fun buildMessagingStyle(context: Context, conversationId: String, conversationTitle: String): NotificationCompat.MessagingStyle {
             val mePerson = Person.Builder().setName("You").build()
             val style = NotificationCompat.MessagingStyle(mePerson)
                 .setConversationTitle(conversationTitle)
                 .setGroupConversation(false)
 
+            val photoUrl = DmConversationStore.getSenderPhotoUrl(context, conversationId)
+            val otherIcon = DmAvatarLoader.load(photoUrl)
+            val otherPersonBuilder = Person.Builder().setName(conversationTitle)
+            otherIcon?.let { otherPersonBuilder.setIcon(it) }
+            val otherPerson = otherPersonBuilder.build()
+
             DmConversationStore.getMessages(context, conversationId).forEach { message ->
-                val person = if (message.fromMe) null else Person.Builder().setName(message.senderName.ifBlank { conversationTitle }).build()
+                val person = if (message.fromMe) null else otherPerson
                 style.addMessage(message.text, message.timestamp, person)
             }
             return style

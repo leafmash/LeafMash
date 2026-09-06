@@ -11,6 +11,9 @@ import androidx.work.Data
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class DmReplyReceiver : BroadcastReceiver() {
 
@@ -22,6 +25,19 @@ class DmReplyReceiver : BroadcastReceiver() {
         val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, 0)
         if (replyText.isNullOrEmpty() || conversationId == null || targetUid == null) return
 
+        val pendingResult = goAsync()
+        val appContext = context.applicationContext
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                handleReply(appContext, conversationId, targetUid, notificationId, replyText)
+            } finally {
+                pendingResult.finish()
+            }
+        }
+    }
+
+    private suspend fun handleReply(context: Context, conversationId: String, targetUid: String, notificationId: Int, replyText: String) {
         DmConversationStore.addMessage(
             context,
             conversationId,
@@ -47,6 +63,10 @@ class DmReplyReceiver : BroadcastReceiver() {
 
         NotificationManagerCompat.from(context).notify(notificationId, notification)
 
+        enqueueSendWorker(context, targetUid, notificationId, replyText)
+    }
+
+    private fun enqueueSendWorker(context: Context, targetUid: String, notificationId: Int, replyText: String) {
         val inputData = Data.Builder()
             .putString(DmReplyWorker.KEY_TEXT, replyText)
             .putString(DmReplyWorker.KEY_TARGET_UID, targetUid)

@@ -8,6 +8,7 @@ class MainActivity : BridgeActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         registerPlugin(DeepLinkPlugin::class.java)
+        registerPlugin(BatteryOptimizationPlugin::class.java)
         super.onCreate(savedInstanceState)
         capturePendingDeepLink(intent)
     }

@@ -44,7 +44,18 @@ object DmConversationStore {
         return messages
     }
 
+    fun setSenderPhotoUrl(context: Context, conversationId: String, url: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString("$conversationId:photo", url).apply()
+    }
+
+    fun getSenderPhotoUrl(context: Context, conversationId: String): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString("$conversationId:photo", "") ?: ""
+    }
+
     fun clear(context: Context, conversationId: String) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().remove(conversationId).apply()
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().remove(conversationId).remove("$conversationId:photo").apply()
     }
 }
