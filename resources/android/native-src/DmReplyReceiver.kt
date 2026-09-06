@@ -22,6 +22,31 @@ class DmReplyReceiver : BroadcastReceiver() {
         val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, 0)
         if (replyText.isNullOrEmpty() || conversationId == null || targetUid == null) return
 
+        DmConversationStore.addMessage(
+            context,
+            conversationId,
+            replyText,
+            fromMe = true,
+            senderName = "You",
+            timestamp = System.currentTimeMillis()
+        )
+
+        DmReplyMessagingService.ensureChannel(context)
+
+        val conversationTitle = DmConversationStore.getMessages(context, conversationId)
+            .lastOrNull { !it.fromMe }?.senderName ?: "LeafMash"
+
+        val notification = NotificationCompat.Builder(context, DmReplyMessagingService.DM_CHANNEL_ID)
+            .setSmallIcon(DmReplyMessagingService.resolveIcon(context))
+            .setStyle(DmReplyMessagingService.buildMessagingStyle(context, conversationId, conversationTitle))
+            .setAutoCancel(true)
+            .setContentIntent(DmReplyMessagingService.buildOpenPendingIntent(context, notificationId, "/#dm-thread?id=$targetUid"))
+            .addAction(DmReplyMessagingService.buildReplyAction(context, conversationId, targetUid, notificationId))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+
+        NotificationManagerCompat.from(context).notify(notificationId, notification)
+
         val inputData = Data.Builder()
             .putString(DmReplyWorker.KEY_TEXT, replyText)
             .putString(DmReplyWorker.KEY_TARGET_UID, targetUid)
@@ -38,15 +63,6 @@ class DmReplyReceiver : BroadcastReceiver() {
             .build()
 
         WorkManager.getInstance(context).enqueue(workRequest)
-
-        DmReplyMessagingService.ensureChannel(context)
-        val iconRes = context.resources.getIdentifier("ic_stat_notify", "drawable", context.packageName)
-        val ackNotification = NotificationCompat.Builder(context, DmReplyMessagingService.DM_CHANNEL_ID)
-            .setSmallIcon(if (iconRes != 0) iconRes else android.R.drawable.ic_dialog_email)
-            .setContentText("You replied: $replyText")
-            .setAutoCancel(true)
-            .build()
-        NotificationManagerCompat.from(context).notify(notificationId, ackNotification)
     }
 
     companion object {

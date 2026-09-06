@@ -3,10 +3,12 @@ package com.leafmash.app
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.Person
 import androidx.core.app.RemoteInput
 import com.google.firebase.messaging.RemoteMessage
 import PLUGIN_MESSAGING_SERVICE_IMPORT
@@ -24,50 +26,26 @@ class DmReplyMessagingService : MessagingService() {
         val context = applicationContext
         val conversationId = data["conversationId"] ?: return
         val senderUid = data["senderUid"] ?: return
+        val senderName = data["senderName"]?.takeIf { it.isNotBlank() } ?: (data["title"] ?: "LeafMash")
         val notificationId = conversationId.hashCode()
+
+        DmConversationStore.addMessage(
+            context,
+            conversationId,
+            data["body"] ?: "",
+            fromMe = false,
+            senderName = senderName,
+            timestamp = System.currentTimeMillis()
+        )
 
         ensureChannel(context)
 
-        val remoteInput = RemoteInput.Builder(DmReplyReceiver.KEY_REPLY_TEXT)
-            .setLabel("Reply")
-            .build()
-
-        val replyIntent = Intent(context, DmReplyReceiver::class.java).apply {
-            putExtra(DmReplyReceiver.EXTRA_CONVERSATION_ID, conversationId)
-            putExtra(DmReplyReceiver.EXTRA_TARGET_UID, senderUid)
-            putExtra(DmReplyReceiver.EXTRA_NOTIFICATION_ID, notificationId)
-        }
-        val replyPendingIntent = PendingIntent.getBroadcast(
-            context,
-            notificationId,
-            replyIntent,
-            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        val replyAction = NotificationCompat.Action.Builder(
-            android.R.drawable.ic_menu_send,
-            "Reply",
-            replyPendingIntent
-        ).addRemoteInput(remoteInput).setAllowGeneratedReplies(true).build()
-
-        val openIntent = Intent(context, MainActivity::class.java).apply {
-            putExtra("leafmash_url", data["url"] ?: "/#message")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val openPendingIntent = PendingIntent.getActivity(
-            context,
-            notificationId,
-            openIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val iconRes = context.resources.getIdentifier("ic_stat_notify", "drawable", context.packageName)
         val notification = NotificationCompat.Builder(context, DM_CHANNEL_ID)
-            .setSmallIcon(if (iconRes != 0) iconRes else android.R.drawable.ic_dialog_email)
-            .setContentTitle(data["title"] ?: "LeafMash")
-            .setContentText(data["body"] ?: "")
+            .setSmallIcon(resolveIcon(context))
+            .setStyle(buildMessagingStyle(context, conversationId, senderName))
             .setAutoCancel(true)
-            .setContentIntent(openPendingIntent)
-            .addAction(replyAction)
+            .setContentIntent(buildOpenPendingIntent(context, notificationId, data["url"] ?: "/#message"))
+            .addAction(buildReplyAction(context, conversationId, senderUid, notificationId))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
 
@@ -77,12 +55,66 @@ class DmReplyMessagingService : MessagingService() {
     companion object {
         const val DM_CHANNEL_ID = "leafmash_dm_channel"
 
-        fun ensureChannel(context: android.content.Context) {
+        fun ensureChannel(context: Context) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
             val manager = context.getSystemService(NotificationManager::class.java) ?: return
             if (manager.getNotificationChannel(DM_CHANNEL_ID) != null) return
             val channel = NotificationChannel(DM_CHANNEL_ID, "Direct messages", NotificationManager.IMPORTANCE_HIGH)
             manager.createNotificationChannel(channel)
+        }
+
+        fun resolveIcon(context: Context): Int {
+            val iconRes = context.resources.getIdentifier("ic_stat_notify", "drawable", context.packageName)
+            return if (iconRes != 0) iconRes else android.R.drawable.ic_dialog_email
+        }
+
+        fun buildReplyAction(context: Context, conversationId: String, targetUid: String, notificationId: Int): NotificationCompat.Action {
+            val remoteInput = RemoteInput.Builder(DmReplyReceiver.KEY_REPLY_TEXT)
+                .setLabel("Reply")
+                .build()
+
+            val replyIntent = Intent(context, DmReplyReceiver::class.java).apply {
+                putExtra(DmReplyReceiver.EXTRA_CONVERSATION_ID, conversationId)
+                putExtra(DmReplyReceiver.EXTRA_TARGET_UID, targetUid)
+                putExtra(DmReplyReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+            }
+            val replyPendingIntent = PendingIntent.getBroadcast(
+                context,
+                notificationId,
+                replyIntent,
+                PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+            return NotificationCompat.Action.Builder(
+                android.R.drawable.ic_menu_send,
+                "Reply",
+                replyPendingIntent
+            ).addRemoteInput(remoteInput).setAllowGeneratedReplies(true).build()
+        }
+
+        fun buildOpenPendingIntent(context: Context, notificationId: Int, url: String): PendingIntent {
+            val openIntent = Intent(context, MainActivity::class.java).apply {
+                putExtra("leafmash_url", url)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            return PendingIntent.getActivity(
+                context,
+                notificationId,
+                openIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        }
+
+        fun buildMessagingStyle(context: Context, conversationId: String, conversationTitle: String): NotificationCompat.MessagingStyle {
+            val mePerson = Person.Builder().setName("You").build()
+            val style = NotificationCompat.MessagingStyle(mePerson)
+                .setConversationTitle(conversationTitle)
+                .setGroupConversation(false)
+
+            DmConversationStore.getMessages(context, conversationId).forEach { message ->
+                val person = if (message.fromMe) null else Person.Builder().setName(message.senderName.ifBlank { conversationTitle }).build()
+                style.addMessage(message.text, message.timestamp, person)
+            }
+            return style
         }
     }
 }
