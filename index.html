@@ -225,12 +225,6 @@
     background: radial-gradient(circle, rgba(255,255,255,.4) 0%, transparent 72%);
     animation: orb-glow 2.2s ease-in-out infinite;
   }
-  .loader-ring {
-    @apply absolute inset-0 rounded-full animate-ring;
-    background: conic-gradient(from 0deg, transparent 0%, transparent 62%, rgba(255,255,255,.85) 100%);
-    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
-            mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
-  }
   .loader-mark {
     @apply w-14 h-14 flex items-center justify-center relative z-[2] text-white;
     animation: mark-breathe 2.2s ease-in-out infinite;
@@ -1751,7 +1745,6 @@
   <div id="loading-screen" class="loading-screen">
     <div class="loader-mark-wrap">
       <div class="loader-orb-glow"></div>
-      <div class="loader-ring"></div>
       <div class="loader-mark">
         <span class="brand-mark">
           <img src="/icons/leafmash-192.png" alt="LeafMash" />
