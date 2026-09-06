@@ -3,7 +3,7 @@ import { collection, query, where, getDocs } from "https://www.gstatic.com/fireb
 import { fetchProfile } from "./auth.js";
 import {
   escapeHtml, escapeAttr, getCachedProfile, cacheUserProfile, avatarInner, nameWithBadge,
-  isAdminEmail, adminBadgeHtml, fullDate, showToast, friendlyError, confirmDialog, wireKebabMenus
+  isAdminEmail, adminBadgeHtml, isVerifiedEmail, verifiedBadgeHtml, fullDate, showToast, friendlyError, confirmDialog, wireKebabMenus
 } from "./ui-utils.js";
 import { loadUserResources } from "./resources.js";
 import { renderPost } from "./wall.js";
@@ -69,6 +69,7 @@ export async function openUserProfilePage(uid, { fromPopstate = false, replace =
 
 function renderProfilePage(profile, uid) {
   const admin = isAdminEmail(profile.email);
+  const verified = !admin && isVerifiedEmail(profile.email);
 
   const rows = [];
   if (profile.roll) rows.push(["Roll / Reg. No.", escapeHtml(profile.roll)]);
@@ -100,6 +101,7 @@ function renderProfilePage(profile, uid) {
         <div class="profile-meta-row">
           ${profile.session ? `<span class="profile-meta-chip chip-session">${escapeHtml(profile.session)}</span>` : ""}
           ${admin ? `<span class="profile-meta-chip chip-admin" title="Admin · can post notices to the whole department">${adminBadgeHtml()} Admin</span>` : ""}
+          ${verified ? `<span class="profile-meta-chip chip-verified" title="Official LeafMash account">${verifiedBadgeHtml()} Verified</span>` : ""}
         </div>
       </div>
       ${profile.bio ? `<p class="profile-own-bio">${escapeHtml(profile.bio)}</p>` : ""}

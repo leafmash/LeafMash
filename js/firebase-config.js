@@ -50,3 +50,4 @@ export { RESOURCE_CATEGORIES } from "../shared/resource-categories.js";
 // Re-exported from the single shared source of truth — see
 // /shared/admin-config.js (also used by the serverless API routes).
 export { ADMIN_EMAILS, ADMIN_NAME } from "../shared/admin-config.js";
+export { VERIFIED_EMAILS, VERIFIED_NAME } from "../shared/admin-config.js";

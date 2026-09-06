@@ -20,7 +20,7 @@ import { openUserProfilePage, loadUserPosts, registerProfilePageRouter, getOpenP
 import { openPostDetailPage, registerPostDetailRouter, teardownPostDetail, getOpenPostId } from "./post-detail.js";
 import {
   escapeHtml, escapeAttr, openModal, closeModal, showToast, setBtnLoading, fullDate,
-  avatarInner, nameWithBadge, isAdminEmail, adminBadgeHtml, friendlyError
+  avatarInner, nameWithBadge, isAdminEmail, adminBadgeHtml, isVerifiedEmail, verifiedBadgeHtml, friendlyError
 } from "./ui-utils.js";
 import { uploadImage } from "./cloudinary.js";
 import { isAcceptableImageFile, openImageViewer } from "./media-picker.js";
@@ -524,6 +524,7 @@ function renderProfile() {
   const joined = fullDate(currentProfile.createdAt);
   const p = currentProfile;
   const admin = isAdminEmail(p.email);
+  const verified = !admin && isVerifiedEmail(p.email);
 
   const rows = [
     ["Class Roll", escapeHtml(p.roll || "Not set")],
@@ -556,6 +557,7 @@ function renderProfile() {
           <span class="profile-meta-chip chip-session">${escapeHtml(DEPARTMENT_NAME)}</span>
           ${p.session ? `<span class="profile-meta-chip chip-session">${escapeHtml(p.session)}</span>` : ""}
           ${admin ? `<span class="profile-meta-chip chip-admin" title="Admin · can post notices to the whole department">${adminBadgeHtml()} Admin</span>` : ""}
+          ${verified ? `<span class="profile-meta-chip chip-verified" title="Official LeafMash account">${verifiedBadgeHtml()} Verified</span>` : ""}
         </div>
       </div>
       ${p.bio ? `<p class="profile-own-bio">${escapeHtml(p.bio)}</p>` : ""}
