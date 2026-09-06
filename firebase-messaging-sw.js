@@ -1,7 +1,7 @@
 importScripts("https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js");
 
-const CACHE_NAME = "leafmash-shell-v2";
+const CACHE_NAME = "leafmash-shell-v3";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -9,8 +9,6 @@ const APP_SHELL = [
   "/icons/leafmash-192.png",
   "/icons/leafmash-512.png"
 ];
-const FRESH_WINDOW_MS = 10 * 60 * 1000;
-const CACHE_TIME_HEADER = "x-leafmash-cached-at";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -35,17 +33,9 @@ self.addEventListener("activate", (event) => {
 
 async function cachePut(cache, request, response) {
   try {
-    const body = await response.clone().arrayBuffer();
-    const headers = new Headers(response.headers);
-    headers.set(CACHE_TIME_HEADER, String(Date.now()));
-    await cache.put(request, new Response(body, { status: response.status, statusText: response.statusText, headers }));
+    await cache.put(request, response);
   } catch (_) {
   }
-}
-
-function cacheAgeMs(response) {
-  const stamp = response && response.headers.get(CACHE_TIME_HEADER);
-  return stamp ? Date.now() - Number(stamp) : Infinity;
 }
 
 self.addEventListener("fetch", (event) => {
@@ -56,18 +46,17 @@ self.addEventListener("fetch", (event) => {
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(request);
 
-    if (cached && cacheAgeMs(cached) < FRESH_WINDOW_MS) {
-      event.waitUntil(fetch(request).then((res) => cachePut(cache, request, res)).catch(() => {}));
+    const networkFetch = fetch(request).then((res) => {
+      cachePut(cache, request, res.clone());
+      return res;
+    }).catch(() => null);
+
+    if (cached) {
+      event.waitUntil(networkFetch);
       return cached;
     }
 
-    try {
-      const fresh = await fetch(request);
-      event.waitUntil(cachePut(cache, request, fresh));
-      return fresh;
-    } catch (_) {
-      return (await cache.match(request)) || (await caches.match("/index.html"));
-    }
+    return (await networkFetch) || (await caches.match("/index.html"));
   })());
 });
 
