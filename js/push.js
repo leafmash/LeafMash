@@ -115,12 +115,6 @@ export function registerNotificationTapHandler(onTap) {
     if (window.__leafmashPendingDeepLinks?.length) {
       window.__leafmashPendingDeepLinks.splice(0).forEach(onTap);
     }
-    const LeafMashDeepLink = window.Capacitor?.Plugins?.LeafMashDeepLink;
-    if (LeafMashDeepLink) {
-      LeafMashDeepLink.getPending()
-        .then(({ url }) => { if (url) onTap(url); })
-        .catch(() => {});
-    }
     return;
   }
   if (!("serviceWorker" in navigator)) return;
@@ -129,6 +123,18 @@ export function registerNotificationTapHandler(onTap) {
       onTap(event.data.url);
     }
   });
+}
+
+export async function consumeNativePendingDeepLink() {
+  if (!isNativeApp) return null;
+  const LeafMashDeepLink = window.Capacitor?.Plugins?.LeafMashDeepLink;
+  if (!LeafMashDeepLink) return null;
+  try {
+    const { url } = await LeafMashDeepLink.getPending();
+    return url || null;
+  } catch {
+    return null;
+  }
 }
 
 export async function unregisterPushToken() {

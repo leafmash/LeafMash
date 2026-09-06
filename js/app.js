@@ -26,7 +26,7 @@ import {
 import { uploadImage } from "./cloudinary.js";
 import { isAcceptableImageFile, openImageViewer } from "./media-picker.js";
 import { openImageCropper } from "./image-cropper.js";
-import { initPush, unregisterPushToken, registerNotificationTapHandler } from "./push.js";
+import { initPush, unregisterPushToken, registerNotificationTapHandler, consumeNativePendingDeepLink } from "./push.js";
 import { initBatteryOptimizationPrompt } from "./battery-optimization.js";
 import { getThemePreference, setThemePreference, initTheme } from "./theme.js";
 
@@ -982,6 +982,8 @@ watchAuthState(
       featuresInitialized = true;
     }
     restoreRouteFromHash();
+    const nativeDeepLink = await consumeNativePendingDeepLink();
+    if (nativeDeepLink) openDeepLink(nativeDeepLink);
     initPush({ requestPermission: true });
     initBatteryOptimizationPrompt();
     if (profile && profile.profileIncomplete) {
