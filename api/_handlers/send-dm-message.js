@@ -14,7 +14,7 @@ function truncate(text = "", max = 120) {
   return text.length > max ? text.slice(0, max) + "…" : text;
 }
 
-async function notifyRecipient(db, uid, otherUid, { conversationId, messageId, text, senderName }) {
+async function notifyRecipient(db, uid, otherUid, { conversationId, messageId, text, senderName, senderPhotoURL }) {
   const tokensSnap = await db.collection("users").doc(otherUid).collection("fcmTokens").get();
   const pairs = tokensSnap.docs.filter((d) => !d.data().revoked).map((d) => ({ uid: otherUid, token: d.id }));
   if (!pairs.length) return;
@@ -28,7 +28,8 @@ async function notifyRecipient(db, uid, otherUid, { conversationId, messageId, t
     conversationId: String(conversationId),
     messageId: String(messageId),
     senderUid: uid,
-    senderName: senderName || ""
+    senderName: senderName || "",
+    senderPhotoURL: senderPhotoURL || ""
   };
 
   for (let i = 0; i < pairs.length; i += 500) {
@@ -106,7 +107,8 @@ export async function sendDmMessage(req, res) {
     });
 
     const senderName = meSnap.get("name") || "";
-    await notifyRecipient(db, uid, otherUid, { conversationId, messageId: msgRef.id, text, senderName }).catch(() => null);
+    const senderPhotoURL = meSnap.get("photoURL") || "";
+    await notifyRecipient(db, uid, otherUid, { conversationId, messageId: msgRef.id, text, senderName, senderPhotoURL }).catch(() => null);
 
     return res.status(200).json({ messageId: msgRef.id, conversationId, senderName });
   } catch (err) {

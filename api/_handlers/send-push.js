@@ -366,8 +366,13 @@ export async function sendPush(req, res) {
         : await collectAllTokens(db, callerUid);
 
     const url = buildDeepLink(type, { postId, conversationId, callerUid });
+    let senderPhotoURL = "";
+    if (type === "dm") {
+      const callerSnap = await db.collection("users").doc(callerUid).get();
+      senderPhotoURL = callerSnap.exists ? (callerSnap.get("photoURL") || "") : "";
+    }
     const extra = type === "dm"
-      ? { conversationId: String(conversationId), messageId: String(messageId), senderUid: callerUid, senderName: actorName || "" }
+      ? { conversationId: String(conversationId), messageId: String(messageId), senderUid: callerUid, senderName: actorName || "", senderPhotoURL }
       : {};
     const result = await sendToTokens(messaging, db, pairs, { url, type: String(type), title, body, ...extra });
     return res.status(200).json({ ok: true, ...result });
