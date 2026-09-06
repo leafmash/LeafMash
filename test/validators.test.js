@@ -90,7 +90,7 @@ describe("enumOrEmpty", () => {
 
 describe("isOwnCloudinaryUrl", () => {
   const folder = "posts";
-  const validUrl = "https://res.cloudinary.com/s9htrtz2/image/upload/v123/posts/abc.jpg";
+  const validUrl = "https://res.cloudinary.com/xreqa1wz/image/upload/v123/posts/abc.jpg";
 
   test("accepts a well-formed cloudinary image URL in the right folder", () => {
     assert.equal(isOwnCloudinaryUrl(validUrl, folder), true);
@@ -98,7 +98,7 @@ describe("isOwnCloudinaryUrl", () => {
 
   test("accepts raw upload type", () => {
     assert.equal(
-      isOwnCloudinaryUrl("https://res.cloudinary.com/s9htrtz2/raw/upload/v1/posts/doc.pdf", folder),
+      isOwnCloudinaryUrl("https://res.cloudinary.com/xreqa1wz/raw/upload/v1/posts/doc.pdf", folder),
       true
     );
   });
@@ -109,14 +109,14 @@ describe("isOwnCloudinaryUrl", () => {
 
   test("rejects wrong host", () => {
     assert.equal(
-      isOwnCloudinaryUrl("https://evil.com/s9htrtz2/image/upload/v1/posts/x.jpg", folder),
+      isOwnCloudinaryUrl("https://evil.com/xreqa1wz/image/upload/v1/posts/x.jpg", folder),
       false
     );
   });
 
   test("rejects non-https protocol", () => {
     assert.equal(
-      isOwnCloudinaryUrl("http://res.cloudinary.com/s9htrtz2/image/upload/v1/posts/x.jpg", folder),
+      isOwnCloudinaryUrl("http://res.cloudinary.com/xreqa1wz/image/upload/v1/posts/x.jpg", folder),
       false
     );
   });
@@ -160,7 +160,7 @@ describe("requiredUrl", () => {
 
 describe("validateImages", () => {
   const folder = "posts";
-  const goodUrl = "https://res.cloudinary.com/s9htrtz2/image/upload/v1/posts/a.jpg";
+  const goodUrl = "https://res.cloudinary.com/xreqa1wz/image/upload/v1/posts/a.jpg";
 
   test("returns empty array for undefined/null", () => {
     assert.deepEqual(validateImages(undefined, folder), []);
