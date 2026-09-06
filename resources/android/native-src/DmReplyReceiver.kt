@@ -54,11 +54,12 @@ class DmReplyReceiver : BroadcastReceiver() {
 
         val notification = NotificationCompat.Builder(context, DmReplyMessagingService.DM_CHANNEL_ID)
             .setSmallIcon(DmReplyMessagingService.resolveIcon(context))
-            .setStyle(DmReplyMessagingService.buildMessagingStyle(context, conversationId, conversationTitle))
+            .setStyle(DmReplyMessagingService.buildMessagingStyle(context, conversationId, conversationTitle, targetUid))
             .setAutoCancel(true)
             .setContentIntent(DmReplyMessagingService.buildOpenPendingIntent(context, notificationId, conversationId, "/#dm-thread?id=$targetUid"))
             .addAction(DmReplyMessagingService.buildReplyAction(context, conversationId, targetUid, notificationId))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setShortcutId(conversationId)
             .build()
 
         NotificationManagerCompat.from(context).notify(notificationId, notification)
