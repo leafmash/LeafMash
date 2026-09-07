@@ -146,7 +146,7 @@ class DmReplyMessagingService : MessagingService() {
             val mePerson = Person.Builder().setName("You").setKey("leafmash_me").setIcon(blankIcon()).build()
             val style = NotificationCompat.MessagingStyle(mePerson)
                 .setConversationTitle(conversationTitle)
-                .setGroupConversation(true)
+                .setGroupConversation(false)
 
             val photoUrl = DmConversationStore.getSenderPhotoUrl(context, conversationId)
             val otherIcon = DmAvatarLoader.load(photoUrl)
