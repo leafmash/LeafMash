@@ -30,6 +30,20 @@ export function isOwnCloudinaryUrl(url, folder) {
   return u.pathname.includes(`/${folder}/`);
 }
 
+export function validateSocialLinks(raw, field = "Social links", max = 5, maxLen = 300) {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) throw new ApiError(400, `${field} must be a list.`);
+  if (raw.length > max) throw new ApiError(400, `You can add up to ${max} ${field.toLowerCase()}.`);
+  return raw
+    .map((url) => (typeof url === "string" ? url.trim() : ""))
+    .filter(Boolean)
+    .map((url) => {
+      if (url.length > maxLen) throw new ApiError(400, `${field} entry is too long (max ${maxLen} characters).`);
+      if (!/^https?:\/\//i.test(url)) throw new ApiError(400, `${field} entries must start with http:// or https://.`);
+      return url;
+    });
+}
+
 export function requiredUrl(value, field, maxLen = 500) {
   const s = requiredText(value, field, maxLen);
   let u;
