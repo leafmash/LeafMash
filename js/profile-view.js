@@ -4,7 +4,7 @@ import { fetchProfile } from "./auth.js";
 import {
   escapeHtml, escapeAttr, getCachedProfile, cacheUserProfile, avatarInner, nameWithBadge,
   isAdminEmail, adminBadgeHtml, fullDate, showToast, friendlyError, confirmDialog, wireKebabMenus,
-  socialLinkIconHtml
+  socialLinksRowHtml, normalizedSocialLinks
 } from "./ui-utils.js";
 import { loadUserResources } from "./resources.js";
 import { renderPost } from "./wall.js";
@@ -79,7 +79,8 @@ function renderProfilePage(profile, uid) {
   if (profile.session) rows.push(["Session / Batch", escapeHtml(profile.session)]);
   if (profile.hometown) rows.push(["Hometown", escapeHtml(profile.hometown)]);
   if (profile.address) rows.push(["Present Address", escapeHtml(profile.address)]);
-  if (profile.socialLink) rows.push(["Social", socialLinkIconHtml(profile.socialLink)]);
+  const socialLinks = normalizedSocialLinks(profile);
+  if (socialLinks.length) rows.push(["Social", socialLinksRowHtml(socialLinks)]);
   rows.push(["Email", profile.hideEmail ? `<span class="hidden-field-tag">Hidden</span>` : escapeHtml(profile.email || "—")]);
   rows.push(["Phone", (profile.hidePhone || !profile.phone) ? `<span class="hidden-field-tag">${profile.phone ? "Hidden" : "Not set"}</span>` : escapeHtml(profile.phone)]);
   rows.push(["College", escapeHtml(COLLEGE_NAME)]);

@@ -140,11 +140,11 @@ export async function signInWithGoogle() {
   return cred.user;
 }
 
-export async function updateProfileDetails({ name, roll, blood, phone, bio, session, year, hometown, address, socialLink, gender, hidePhone, hideEmail, photoURL }) {
+export async function updateProfileDetails({ name, roll, blood, phone, bio, session, year, hometown, address, socialLinks, gender, hidePhone, hideEmail, photoURL }) {
 
   const wasNameChangeAttempt = name !== undefined && name.trim() && name.trim() !== (currentProfile?.name || "");
   const { profile } = await callApi("update-profile", {
-    name, roll, blood, phone, bio, session, year, hometown, address, socialLink, gender, hidePhone, hideEmail, photoURL
+    name, roll, blood, phone, bio, session, year, hometown, address, socialLinks, gender, hidePhone, hideEmail, photoURL
   });
   currentProfile = profile;
   if (wasNameChangeAttempt) currentProfile.nameChangedAt = new Date();

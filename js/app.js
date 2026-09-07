@@ -21,7 +21,7 @@ import { openUserProfilePage, loadUserPosts, registerProfilePageRouter, getOpenP
 import { openPostDetailPage, registerPostDetailRouter, teardownPostDetail, getOpenPostId } from "./post-detail.js";
 import {
   escapeHtml, escapeAttr, openModal, closeModal, showToast, setBtnLoading, fullDate,
-  avatarInner, nameWithBadge, isAdminEmail, adminBadgeHtml, friendlyError, socialLinkIconHtml
+  avatarInner, nameWithBadge, isAdminEmail, adminBadgeHtml, friendlyError, socialLinksRowHtml, normalizedSocialLinks
 } from "./ui-utils.js";
 import { uploadImage } from "./cloudinary.js";
 import { isAcceptableImageFile, openImageViewer } from "./media-picker.js";
@@ -521,7 +521,7 @@ function renderProfile() {
     ["Present Address", escapeHtml(p.address || "Not set")],
     ["Phone", `${escapeHtml(p.phone || "Not set")}${p.hidePhone ? ' <span class="hidden-field-tag">Hidden</span>' : ""}`],
     ["Email", `${escapeHtml(p.email)}${p.hideEmail ? ' <span class="hidden-field-tag">Hidden</span>' : ""}`],
-    ["Social", p.socialLink ? socialLinkIconHtml(p.socialLink) : "Not set"],
+    ["Social", socialLinksRowHtml(normalizedSocialLinks(p))],
     ["College", escapeHtml(COLLEGE_NAME)]
   ];
   if (joined) rows.push(["Joined LeafMash", joined]);
@@ -830,10 +830,11 @@ function openProfileDetailsModal(isFirstTime = false) {
       <span>Present Address</span>
       <input type="text" id="pd-address" placeholder="e.g. Hostel / Mess address" value="${escapeAttr(currentProfile.address || "")}" />
     </label>
-    <label class="field">
-      <span>Social Link</span>
-      <input type="url" id="pd-social" placeholder="https://facebook.com/… or any social profile URL" value="${escapeAttr(currentProfile.socialLink || "")}" />
-    </label>
+    <div class="field">
+      <span>Social Links (up to 5)</span>
+      <div class="pd-social-list" id="pd-social-list"></div>
+      <button type="button" class="btn-outline small pd-social-add-btn" id="pd-social-add-btn">+ Add another link</button>
+    </div>
     <label class="field">
       <span>About / Bio</span>
       <input type="text" id="pd-bio" placeholder="A short line about yourself" value="${escapeAttr(currentProfile.bio || "")}" />
@@ -877,6 +878,32 @@ function openProfileDetailsModal(isFirstTime = false) {
   });
 
   document.getElementById("pd-save-btn").addEventListener("click", () => saveProfileDetails(isFirstTime, () => selectedPhotoFile));
+
+  const MAX_SOCIAL_LINKS = 5;
+  const socialListEl = document.getElementById("pd-social-list");
+  const socialAddBtn = document.getElementById("pd-social-add-btn");
+
+  function addSocialRow(value) {
+    if (socialListEl.children.length >= MAX_SOCIAL_LINKS) return;
+    const row = document.createElement("div");
+    row.className = "pd-social-row";
+    row.innerHTML = `
+      <input type="url" class="pd-social-input" placeholder="https://facebook.com/… or any social profile URL" value="${escapeAttr(value || "")}" />
+      <button type="button" class="pd-social-remove-btn" aria-label="Remove link">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
+      </button>
+    `;
+    row.querySelector(".pd-social-remove-btn").addEventListener("click", () => {
+      row.remove();
+      socialAddBtn.classList.toggle("hidden", socialListEl.children.length >= MAX_SOCIAL_LINKS);
+    });
+    socialListEl.appendChild(row);
+    socialAddBtn.classList.toggle("hidden", socialListEl.children.length >= MAX_SOCIAL_LINKS);
+  }
+
+  const existingSocialLinks = normalizedSocialLinks(currentProfile);
+  (existingSocialLinks.length ? existingSocialLinks : [""]).forEach(addSocialRow);
+  socialAddBtn.addEventListener("click", () => addSocialRow(""));
 }
 
 async function saveProfileDetails(isFirstTime, getSelectedPhotoFile) {
@@ -891,7 +918,10 @@ async function saveProfileDetails(isFirstTime, getSelectedPhotoFile) {
   const session = document.getElementById("pd-session").value;
   const hometown = document.getElementById("pd-hometown").value;
   const address = document.getElementById("pd-address").value;
-  const socialLink = document.getElementById("pd-social").value;
+  const socialLinks = Array.from(document.querySelectorAll(".pd-social-input"))
+    .map(el => el.value.trim())
+    .filter(Boolean)
+    .slice(0, 5);
   const bio = document.getElementById("pd-bio").value;
   const hidePhone = document.getElementById("pd-hide-phone").checked;
   const hideEmail = document.getElementById("pd-hide-email").checked;
@@ -911,7 +941,7 @@ async function saveProfileDetails(isFirstTime, getSelectedPhotoFile) {
       photoURL = await uploadImage(selectedPhotoFile, { maxDim: 600, quality: 0.85, folder: "leafmash/avatars" });
       setBtnLoading(btn, true, "Saving…");
     }
-    await updateProfileDetails({ name, roll, blood, gender, phone, year, session, hometown, address, socialLink, bio, hidePhone, hideEmail, photoURL });
+    await updateProfileDetails({ name, roll, blood, gender, phone, year, session, hometown, address, socialLinks, bio, hidePhone, hideEmail, photoURL });
     closeModal({ force: true }); 
     showToast(isFirstTime ? "Profile complete — welcome aboard!" : "Profile updated.");
     if (!document.getElementById("section-profile").classList.contains("hidden")) renderProfile();

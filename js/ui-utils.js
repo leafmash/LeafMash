@@ -165,6 +165,17 @@ export function socialLinkIconHtml(url) {
   return `<a class="profile-social-icon-btn sc-${entry.key}" href="${escapeAttr(url)}" target="_blank" rel="noopener" aria-label="${entry.label} link">${entry.svg}</a>`;
 }
 
+export function socialLinksRowHtml(links) {
+  const list = (links || []).filter(Boolean);
+  if (!list.length) return "Not set";
+  return `<div class="profile-social-row">${list.map(socialLinkIconHtml).join("")}</div>`;
+}
+
+export function normalizedSocialLinks(profile) {
+  if (profile?.socialLinks?.length) return profile.socialLinks;
+  return profile?.socialLink ? [profile.socialLink] : [];
+}
+
 export function initialsOf(name = "?") {
   return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() || "").join("") || "?";
 }
