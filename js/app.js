@@ -57,40 +57,12 @@ if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 
 const loadingScreen = document.getElementById("loading-screen");
 const loadingLabel = document.getElementById("loading-label");
-const loadingBarFill = document.querySelector(".loading-bar-fill");
+const loadingDots = document.querySelector(".loading-dots");
 const authScreen = document.getElementById("auth-screen");
 const appShell = document.getElementById("app-shell");
 
 if (CapSplashScreen) {
   CapSplashScreen.hide({ fadeOutDuration: 300 }).catch(() => {});
-}
-
-let loadingProgress = 0;
-function setLoadingProgress(pct) {
-  loadingProgress = Math.max(loadingProgress, pct);
-  if (loadingBarFill) loadingBarFill.style.width = loadingProgress + "%";
-}
-function resetLoadingProgress() {
-  loadingProgress = 0;
-  if (loadingBarFill) {
-    loadingBarFill.style.transition = "none";
-    loadingBarFill.style.width = "6%";
-    void loadingBarFill.offsetWidth; 
-    loadingBarFill.style.transition = "";
-    loadingProgress = 6;
-  }
-}
-resetLoadingProgress();
-setLoadingProgress(15); 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => setLoadingProgress(35), { once: true });
-} else {
-  setLoadingProgress(35);
-}
-if (document.readyState === "complete") {
-  setLoadingProgress(60); 
-} else {
-  window.addEventListener("load", () => setLoadingProgress(60), { once: true });
 }
 
 const offlineBanner = document.getElementById("offline-banner");
@@ -107,12 +79,16 @@ function setLoadingLabel(text) {
 const LOADING_MIN_DISPLAY_MS = 300;
 
 function showLoadingScreen(text) {
-  if (loadingScreen.classList.contains("hidden")) resetLoadingProgress();
   setLoadingLabel(text);
+  if (loadingDots) loadingDots.classList.remove("is-complete");
   loadingScreen.classList.add("no-transition");
   loadingScreen.classList.remove("hidden");
   void loadingScreen.offsetWidth;
   loadingScreen.classList.remove("no-transition");
+}
+
+function completeLoadingDots() {
+  if (loadingDots) loadingDots.classList.add("is-complete");
 }
 
 function hideLoadingScreen() {
@@ -958,7 +934,6 @@ isColdStart = await resetCacheOnColdStart();
 watchAuthState(
   async (user, profile) => {
     showLoadingScreen("Loading LeafMash");
-    setLoadingProgress(85); 
     authScreen.classList.add("hidden");
     appShell.classList.remove("hidden");
 
@@ -994,7 +969,7 @@ watchAuthState(
     // on the network/cache. Each section (Wall, Directory, ...) already
     // shows its own skeleton and fills itself in as its listener reports
     // data, so there's nothing left for a full-screen loader to wait for.
-    setLoadingProgress(100); 
+    completeLoadingDots();
     setTimeout(hideLoadingScreen, LOADING_MIN_DISPLAY_MS);
 
     // Cold-start bookkeeping still happens, just quietly in the background —
@@ -1032,14 +1007,13 @@ watchAuthState(
 
     if (loggingOut) {
       showLoadingScreen("Logging out");
-      setLoadingProgress(100);
+      completeLoadingDots();
       setTimeout(() => {
         hideLoadingScreen();
         setLoadingLabel("Loading LeafMash");
         loggingOut = false;
       }, LOADING_MIN_DISPLAY_MS);
     } else {
-      setLoadingProgress(100);
       hideLoadingScreen();
     }
   },
