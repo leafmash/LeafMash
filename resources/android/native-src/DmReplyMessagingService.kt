@@ -39,7 +39,6 @@ class DmReplyMessagingService : MessagingService() {
         val senderUid = data["senderUid"] ?: return
         val senderName = data["senderName"]?.takeIf { it.isNotBlank() } ?: (data["title"] ?: "LeafMash")
         val senderPhotoURL = data["senderPhotoURL"] ?: ""
-        val notificationId = conversationId.hashCode()
 
         DmConversationStore.addMessage(
             context,
@@ -52,29 +51,33 @@ class DmReplyMessagingService : MessagingService() {
         if (senderPhotoURL.isNotBlank()) {
             DmConversationStore.setSenderPhotoUrl(context, conversationId, senderPhotoURL)
         }
-        val unreadCount = DmConversationStore.incrementUnread(context, conversationId)
+        DmConversationStore.setConversationTitle(context, conversationId, senderName)
+        DmConversationStore.incrementUnread(context, conversationId)
 
-        ensureChannel(context)
-
-        val notification = NotificationCompat.Builder(context, DM_CHANNEL_ID)
-            .setSmallIcon(resolveIcon(context))
-            .setStyle(buildMessagingStyle(context, conversationId, senderName, senderUid))
-            .setAutoCancel(true)
-            .setContentIntent(buildOpenPendingIntent(context, notificationId, conversationId, data["url"] ?: "/#message"))
-            .setDeleteIntent(buildDeletePendingIntent(context, notificationId, conversationId))
-            .addAction(buildReplyAction(context, conversationId, senderUid, notificationId))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setNumber(unreadCount)
-            .setShortcutId(conversationId)
-            .build()
-
-        val manager = NotificationManagerCompat.from(context)
-        manager.cancel(notificationId)
-        manager.notify(notificationId, notification)
+        buildAndShowNotification(context, conversationId, senderUid, senderName, data["url"] ?: "/#message")
     }
 
     companion object {
         const val DM_CHANNEL_ID = "leafmash_dm_channel"
+
+        suspend fun buildAndShowNotification(context: Context, conversationId: String, otherUid: String, conversationTitle: String, url: String) {
+            val notificationId = conversationId.hashCode()
+            ensureChannel(context)
+
+            val notification = NotificationCompat.Builder(context, DM_CHANNEL_ID)
+                .setSmallIcon(resolveIcon(context))
+                .setStyle(buildMessagingStyle(context, conversationId, conversationTitle, otherUid))
+                .setAutoCancel(true)
+                .setContentIntent(buildOpenPendingIntent(context, notificationId, conversationId, url))
+                .setDeleteIntent(buildDeletePendingIntent(context, notificationId, conversationId))
+                .addAction(buildReplyAction(context, conversationId, otherUid, notificationId))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setNumber(DmConversationStore.getUnreadCount(context, conversationId))
+                .setShortcutId(conversationId)
+                .build()
+
+            NotificationManagerCompat.from(context).notify(notificationId, notification)
+        }
 
         fun ensureChannel(context: Context) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
