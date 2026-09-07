@@ -5,6 +5,8 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Color
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -84,6 +86,12 @@ class DmReplyMessagingService : MessagingService() {
             return if (iconRes != 0) iconRes else android.R.drawable.ic_dialog_email
         }
 
+        fun blankIcon(): IconCompat {
+            val bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+            bitmap.eraseColor(Color.TRANSPARENT)
+            return IconCompat.createWithBitmap(bitmap)
+        }
+
         fun buildReplyAction(context: Context, conversationId: String, targetUid: String, notificationId: Int): NotificationCompat.Action {
             val remoteInput = RemoteInput.Builder(DmReplyReceiver.KEY_REPLY_TEXT)
                 .setLabel("Reply")
@@ -122,7 +130,7 @@ class DmReplyMessagingService : MessagingService() {
         }
 
         suspend fun buildMessagingStyle(context: Context, conversationId: String, conversationTitle: String, otherUid: String): NotificationCompat.MessagingStyle {
-            val mePerson = Person.Builder().setName("You").build()
+            val mePerson = Person.Builder().setName("You").setIcon(blankIcon()).build()
             val style = NotificationCompat.MessagingStyle(mePerson)
                 .setConversationTitle(conversationTitle)
                 .setGroupConversation(true)
