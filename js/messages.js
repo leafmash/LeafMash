@@ -176,7 +176,7 @@ function renderChatBubbles(listEl, docs, { emptyText, showNames = true, seenUpTo
       <div class="chat-bubble-row ${mine ? "mine" : ""}" data-msg-id="${escapeAttr(m.id)}" data-can-delete="${canDelete ? "1" : "0"}">
         ${grouped ? `<span style="width:26px" aria-hidden="true"></span>` : `<span class="avatar" data-author="${escapeAttr(uid || "")}">${avatarInner(profile)}</span>`}
         <div class="chat-bubble-group">
-          ${!mine && !grouped && showNames ? `<span class="chat-bubble-name">${nameWithBadge(profile.name || "Classmate", profile.email)}</span>` : ""}
+          ${!mine && !grouped && showNames ? `<span class="chat-bubble-name">${nameWithBadge(profile.name || "Classmate", profile.email, uid)}</span>` : ""}
           <div class="chat-bubble">${richTextHtml(m.text || "", [])}</div>
           <div class="chat-bubble-meta"><span>${timeLabel}</span>${showReceipt ? receiptIconHtml(seen, isLastMine) : ""}</div>
         </div>
@@ -437,7 +437,7 @@ function renderConversationList() {
           ${avatarPresenceDotHtml(uid, { label: true })}
         </span>
         <div class="dm-conv-info">
-          <strong>${nameWithBadge(profile.name || "Classmate", profile.email)}</strong>
+          <strong>${nameWithBadge(profile.name || "Classmate", profile.email, uid)}</strong>
           <div class="dm-conv-preview ${unread > 0 ? "unread" : ""}">${escapeHtml(previewText)}</div>
         </div>
         <div class="dm-conv-meta">
@@ -611,7 +611,7 @@ function renderDmThreadHeader(uid) {
       ${avatarPresenceDotHtml(uid)}
     </span>
     <div>
-      <span class="dm-thread-header-name">${nameWithBadge(profile.name || "Classmate", profile.email)}</span>
+      <span class="dm-thread-header-name">${nameWithBadge(profile.name || "Classmate", profile.email, uid)}</span>
       ${presenceTextHtml(uid, "dm-thread-presence-chip")}
     </div>`;
   paintPresenceUI();

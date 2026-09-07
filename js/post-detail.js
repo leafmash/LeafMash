@@ -41,7 +41,7 @@ const unsubscribeProfileUpdates = subscribeToProfileUpdates((uid) => {
     el.innerHTML = avatarInner(profile);
   });
   bodyEl.querySelectorAll(`.post-author-name[data-author="${uid}"], .comment-author[data-author="${uid}"]`).forEach(el => {
-    el.innerHTML = nameWithBadge(profile.name, profile.email);
+    el.innerHTML = nameWithBadge(profile.name, profile.email, uid);
   });
 });
 
@@ -371,7 +371,7 @@ function renderPostDetail(postId, post, comments, container, { focusComment, com
           ${avatarPresenceDotHtml(post.authorUid)}
         </span>
         <div class="post-meta">
-          <button type="button" class="post-author-name" data-author="${post.authorUid}">${nameWithBadge(post.authorName, post.authorEmail)}</button>
+          <button type="button" class="post-author-name" data-author="${post.authorUid}">${nameWithBadge(post.authorName, post.authorEmail, post.authorUid)}</button>
           <small>${post.pinned ? "📌 Pinned · " : ""}${timeAgo(post.createdAt)}${post.editedAt ? " · edited" : ""}</small>
         </div>
         ${kebabActions.length ? kebabMenuHtml(postId, kebabActions) : ""}
@@ -574,7 +574,7 @@ function commentItemHtml(c, uid, isPostOwner, contextTag = "") {
       <div class="comment-col">
         <div class="comment-body">
           ${contextTag}
-          <button type="button" class="comment-author" data-author="${c.authorUid}">${nameWithBadge(c.authorName, c.authorEmail)}</button>
+          <button type="button" class="comment-author" data-author="${c.authorUid}">${nameWithBadge(c.authorName, c.authorEmail, c.authorUid)}</button>
           <p>${richTextHtml(c.text, c.mentions)}</p>
         </div>
         <div class="comment-foot">
@@ -612,7 +612,7 @@ function replyItemHtml(c, uid, isPostOwner, parentComment) {
       <div class="comment-col">
         <div class="comment-body">
           ${showReplyTag ? `<div class="reply-context">↳ Replying to ${escapeHtml(c.replyTo.authorName || "")}</div>` : ""}
-          <button type="button" class="comment-author" data-author="${c.authorUid}">${nameWithBadge(c.authorName, c.authorEmail)}</button>
+          <button type="button" class="comment-author" data-author="${c.authorUid}">${nameWithBadge(c.authorName, c.authorEmail, c.authorUid)}</button>
           <p>${richTextHtml(c.text, c.mentions)}</p>
         </div>
         <div class="comment-foot">
@@ -642,7 +642,7 @@ function pendingCommentItemHtml(p) {
       <div class="comment-col">
         <div class="comment-body comment-body-pending">
           ${replyTag}
-          <span class="comment-author">${nameWithBadge(currentProfile ? currentProfile.name : "You", currentProfile ? currentProfile.email : "")}</span>
+          <span class="comment-author">${nameWithBadge(currentProfile ? currentProfile.name : "You", currentProfile ? currentProfile.email : "", currentProfile?.uid)}</span>
           <p>${escapeHtml(p.text)}</p>
         </div>
         <div class="comment-foot" aria-label="Sending comment">
@@ -738,7 +738,7 @@ function openEditCommentModal(postId, commentId, currentText, currentMentions = 
       <div class="composer-modal-head">
         <div class="avatar">${avatarInner(currentProfile || {})}</div>
         <div>
-          <strong>${nameWithBadge(currentProfile ? currentProfile.name : "You", currentProfile ? currentProfile.email : "")}</strong>
+          <strong>${nameWithBadge(currentProfile ? currentProfile.name : "You", currentProfile ? currentProfile.email : "", currentProfile?.uid)}</strong>
           <small>Editing your comment</small>
         </div>
       </div>

@@ -173,7 +173,7 @@ function refreshAuthorDisplays(uid) {
     el.innerHTML = avatarInner(profile);
   });
   document.querySelectorAll(`.post-author-name[data-author="${uid}"]`).forEach(el => {
-    el.innerHTML = nameWithBadge(profile.name, profile.email);
+    el.innerHTML = nameWithBadge(profile.name, profile.email, uid);
   });
 }
 
@@ -276,7 +276,7 @@ function renderPendingPost(pending, listEl) {
         <span class="avatar">${avatarInner(author)}</span>
       </span>
       <div class="post-meta">
-        <span class="post-author-name">${nameWithBadge(pending.authorName, pending.authorEmail)}</span>
+        <span class="post-author-name">${nameWithBadge(pending.authorName, pending.authorEmail, pending.authorUid)}</span>
         <small class="pending-status">
           ${pending.status === "sending" ? `<span class="btn-spinner dark" aria-hidden="true"></span> ` : ""}${escapeHtml(statusLabel)}
         </small>
@@ -343,7 +343,7 @@ function openComposerModal(draft = null) {
       <div class="composer-modal-head">
         <div class="avatar">${avatarInner(currentProfile || {})}</div>
         <div>
-          <strong>${nameWithBadge(currentProfile ? currentProfile.name : "You", currentProfile ? currentProfile.email : "")}</strong>
+          <strong>${nameWithBadge(currentProfile ? currentProfile.name : "You", currentProfile ? currentProfile.email : "", currentProfile?.uid)}</strong>
           <small>Posting to the Student Wall</small>
         </div>
       </div>
@@ -542,7 +542,7 @@ export function openEditPostModal(postId, currentText, onSaved, currentImages = 
       <div class="composer-modal-head">
         <div class="avatar">${avatarInner(currentProfile || {})}</div>
         <div>
-          <strong>${nameWithBadge(currentProfile ? currentProfile.name : "You", currentProfile ? currentProfile.email : "")}</strong>
+          <strong>${nameWithBadge(currentProfile ? currentProfile.name : "You", currentProfile ? currentProfile.email : "", currentProfile?.uid)}</strong>
           <small>Editing your post</small>
         </div>
       </div>
@@ -650,7 +650,7 @@ export function renderPost(postId, post, listEl, { onChanged } = {}) {
         ${avatarPresenceDotHtml(post.authorUid)}
       </span>
       <div class="post-meta">
-        <button type="button" class="post-author-name" data-author="${post.authorUid}">${nameWithBadge(post.authorName, post.authorEmail)}</button>
+        <button type="button" class="post-author-name" data-author="${post.authorUid}">${nameWithBadge(post.authorName, post.authorEmail, post.authorUid)}</button>
         <small>${post.pinned ? "📌 Pinned · " : ""}${timeAgo(post.createdAt)}${post.editedAt ? " · edited" : ""}</small>
       </div>
       ${kebabMenuHtml(postId, kebabActions)}
@@ -849,7 +849,7 @@ export async function openReactionsModal(reactions) {
       ${people.map(p => `
         <button type="button" class="directory-row likes-row" data-uid="${p.uid}">
           <div class="avatar">${avatarInner(p)}</div>
-          <div class="directory-info"><strong>${nameWithBadge(p.name, p.email)}</strong></div>
+          <div class="directory-info"><strong>${nameWithBadge(p.name, p.email, p.uid)}</strong></div>
           <span class="reaction-emoji-tag">${reactionGlyphHtml(p.emoji)}</span>
         </button>
       `).join("")}
@@ -1037,7 +1037,7 @@ export async function openHashtagResults(tag) {
         <button type="button" class="directory-row hashtag-result-row" data-post-id="${p.id}">
           <div class="avatar" data-author="${p.authorUid}">${avatarInner(authorProfile(p.authorUid, p.authorName))}</div>
           <div class="directory-info">
-            <strong>${nameWithBadge(p.authorName, p.authorEmail)}</strong>
+            <strong>${nameWithBadge(p.authorName, p.authorEmail, p.authorUid)}</strong>
             <small class="hashtag-result-snippet">${escapeHtml((p.text || "").slice(0, 90))}</small>
           </div>
         </button>

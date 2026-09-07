@@ -25,7 +25,7 @@ subscribeToProfileUpdates((uid) => {
     el.innerHTML = avatarInner(profile);
   });
   document.querySelectorAll(`.notice-row-name[data-author="${uid}"], .notice-detail-name[data-author="${uid}"]`).forEach(el => {
-    el.innerHTML = nameWithBadge(profile.name, profile.email);
+    el.innerHTML = nameWithBadge(profile.name, profile.email, uid);
   });
 });
 
@@ -423,7 +423,7 @@ function renderNoticesList() {
       <div class="notice-row-top">
         <span class="avatar avatar-sm notice-row-avatar" data-author="${n.postedByUid}">${avatarInner(posterProfile(n.postedByUid, n.postedByName, n.postedBy))}</span>
         <div class="notice-row-byline">
-          <span class="notice-row-name" data-author="${n.postedByUid}">${nameWithBadge(n.postedByName || "Admin", n.postedBy)}</span>
+          <span class="notice-row-name" data-author="${n.postedByUid}">${nameWithBadge(n.postedByName || "Admin", n.postedBy, n.postedByUid)}</span>
           <small>${timeAgo(n.createdAt)}</small>
         </div>
         ${n.urgent ? `<span class="urgent-tag"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18.5a1.8 1.8 0 0 0 1.55 2.7h17.3a1.8 1.8 0 0 0 1.55-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0z"/><circle cx="12" cy="16.3" r="1"/></svg>Urgent</span>` : ""}
@@ -471,7 +471,7 @@ function openNoticeDetail(noticeId) {
       <div class="notice-detail-head">
         <span class="avatar avatar-lg" data-author="${n.postedByUid}">${avatarInner(posterProfile(n.postedByUid, n.postedByName, n.postedBy))}</span>
         <div>
-          <div class="notice-detail-name" data-author="${n.postedByUid}">${nameWithBadge(n.postedByName || "Admin", n.postedBy)}</div>
+          <div class="notice-detail-name" data-author="${n.postedByUid}">${nameWithBadge(n.postedByName || "Admin", n.postedBy, n.postedByUid)}</div>
           <small>${fullDate(n.createdAt) || "Just now"}</small>
         </div>
       </div>
@@ -627,7 +627,7 @@ function renderActivityList() {
       <div class="notice-row-top">
         <span class="avatar avatar-sm" data-author="${a.actorUid}">${avatarInner(posterProfile(a.actorUid, a.actorName, a.actorEmail))}</span>
         <div class="notice-row-byline">
-          <span class="notice-row-name" data-author="${a.actorUid}">${nameWithBadge(a.actorName || "Someone", a.actorEmail)}</span>
+          <span class="notice-row-name" data-author="${a.actorUid}">${nameWithBadge(a.actorName || "Someone", a.actorEmail, a.actorUid)}</span>
           <small>${timeAgo(a.createdAt)}</small>
         </div>
         ${kebabMenuHtml(a.id, [{ action: "delete", label: "Delete Notification", danger: true }])}

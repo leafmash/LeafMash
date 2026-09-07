@@ -154,7 +154,7 @@ function runSearch() {
       <div class="search-result-row" data-kind="student" data-id="${escapeHtml(s.uid || "")}">
         <span class="avatar search-result-avatar">${avatarInner(s)}</span>
         <div class="search-result-info">
-          <strong>${nameWithBadge(s.name || "Unnamed", s.email)}</strong>
+          <strong>${nameWithBadge(s.name || "Unnamed", s.email, s.uid)}</strong>
           <small>${escapeHtml(s.roll || "—")}${s.year ? " · " + escapeHtml(s.year) : ""}</small>
         </div>
       </div>`).join("");

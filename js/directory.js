@@ -127,7 +127,7 @@ function renderDirectory() {
         ${avatarPresenceDotHtml(s.uid, { label: true })}
       </span>
       <div class="directory-info">
-        <strong>${nameWithBadge(s.name || "Unnamed", s.email)}</strong>
+        <strong>${nameWithBadge(s.name || "Unnamed", s.email, s.uid)}</strong>
         <div class="directory-sub">
           <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M4 17V7l8-4 8 4v10l-8 4-8-4z"/></svg>
           ${escapeHtml(s.roll || "—")}${s.year ? " · " + escapeHtml(s.year) : (s.session ? " · " + escapeHtml(s.session) : "")}

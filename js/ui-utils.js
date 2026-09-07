@@ -222,16 +222,13 @@ export function verifiedBadgeHtml() {
   return `<svg class="verified-badge" viewBox="0 0 24 24" role="img" aria-label="Verified LeafMash Account" aria-hidden="false"><title>Official LeafMash Account</title><path d="M23 12l-2.44-2.79.34-3.69-3.61-.82-1.89-3.2L12 2.96 8.6 1.5 6.71 4.69 3.1 5.5l.34 3.7L1 12l2.44 2.79-.34 3.7 3.61.82L8.6 22.5l3.4-1.47 3.4 1.46 1.89-3.19 3.61-.82-.34-3.69L23 12z"/><path d="M8.6 12.3l2.2 2.2 4.6-4.7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
-export function nameWithBadge(name, email) {
+export function nameWithBadge(name, email, uid) {
   const admin = isAdminEmail(email);
   const officialVerified = !admin && isVerifiedEmail(email);
   const displayName = admin ? ADMIN_NAME : officialVerified ? VERIFIED_NAME : (name || "Classmate");
   if (admin) return `${escapeHtml(displayName)}${adminBadgeHtml()}`;
   if (officialVerified) return `${escapeHtml(displayName)}${verifiedBadgeHtml()}`;
-  // Admin-granted badge for a regular classmate: show the icon next to
-  // their real name only — never rename them the way the official
-  // LeafMash account is renamed above.
-  if (hasVerifiedBadge(email)) return `${escapeHtml(displayName)}${verifiedBadgeHtml()}`;
+  if (hasVerifiedBadge(uid)) return `${escapeHtml(displayName)}${verifiedBadgeHtml()}`;
   return escapeHtml(displayName);
 }
 
@@ -294,27 +291,18 @@ const userCache = new Map();
 const profileListeners = new Set();
 const subscribedProfiles = new Set();
 
-// Emails of classmates the admin has granted a verified badge to (see the
-// "Verified Badge" tool in the admin panel). Populated opportunistically
-// whenever a profile passes through cacheUserProfile — i.e. directory
-// listings, search results, post/comment authors, DM participants, etc.
-// This mirrors the existing isAdminEmail/isVerifiedEmail lookups but is
-// backed by live Firestore data (the `verified` field on /users/{uid})
-// instead of a hardcoded list, so an admin can badge *any* classmate.
-const verifiedEmailsDynamic = new Set();
+const verifiedUidsDynamic = new Set();
 
 export function cacheUserProfile(uid, profile) {
   if (!uid || !profile) return;
   userCache.set(uid, profile);
-  if (profile.email) {
-    if (profile.verified) verifiedEmailsDynamic.add(profile.email);
-    else verifiedEmailsDynamic.delete(profile.email);
-  }
+  if (profile.verified) verifiedUidsDynamic.add(uid);
+  else verifiedUidsDynamic.delete(uid);
   profileListeners.forEach(cb => cb(uid));
 }
 
-export function hasVerifiedBadge(email) {
-  return !!email && verifiedEmailsDynamic.has(email);
+export function hasVerifiedBadge(uid) {
+  return !!uid && verifiedUidsDynamic.has(uid);
 }
 
 export function getCachedProfile(uid) {

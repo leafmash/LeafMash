@@ -96,7 +96,7 @@ function renderProfilePage(profile, uid) {
           <span class="avatar avatar-lg profile-flow-avatar">${avatarInner(profile)}</span>
           ${avatarPresenceDotHtml(uid, { label: true })}
         </div>
-        <h3>${nameWithBadge(profile.name || "Classmate", profile.email)}</h3>
+        <h3>${nameWithBadge(profile.name || "Classmate", profile.email, uid)}</h3>
         <div class="profile-meta-row">
           ${profile.session ? `<span class="profile-meta-chip chip-session">${escapeHtml(profile.session)}</span>` : ""}
           ${admin ? `<span class="profile-meta-chip chip-admin" title="Admin · can post notices to the whole department">${adminBadgeHtml()} Admin</span>` : ""}
