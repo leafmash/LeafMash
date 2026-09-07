@@ -169,9 +169,16 @@ class DmReplyMessagingService : MessagingService() {
 
             ensureConversationShortcut(context, conversationId, conversationTitle, otherIcon, otherPerson, otherUid)
 
-            DmConversationStore.getMessages(context, conversationId).forEach { message ->
+            val messages = DmConversationStore.getMessages(context, conversationId)
+            val unreadCount = DmConversationStore.getUnreadCount(context, conversationId)
+            val historicCount = (messages.size - unreadCount).coerceAtLeast(0)
+            messages.forEachIndexed { index, message ->
                 val person = if (message.fromMe) null else otherPerson
-                style.addMessage(message.text, message.timestamp, person)
+                if (index < historicCount) {
+                    style.addHistoricMessage(NotificationCompat.MessagingStyle.Message(message.text, message.timestamp, person))
+                } else {
+                    style.addMessage(message.text, message.timestamp, person)
+                }
             }
             return style
         }

@@ -3,6 +3,7 @@ package com.leafmash.app
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.RemoteInput
 import androidx.work.Constraints
 import androidx.work.Data
@@ -35,7 +36,7 @@ class DmReplyReceiver : BroadcastReceiver() {
         }
     }
 
-    private suspend fun handleReply(context: Context, conversationId: String, targetUid: String, notificationId: Int, replyText: String) {
+    private fun handleReply(context: Context, conversationId: String, targetUid: String, notificationId: Int, replyText: String) {
         DmConversationStore.addMessage(
             context,
             conversationId,
@@ -45,9 +46,7 @@ class DmReplyReceiver : BroadcastReceiver() {
             timestamp = System.currentTimeMillis()
         )
         DmConversationStore.resetUnread(context, conversationId)
-
-        val conversationTitle = DmConversationStore.getConversationTitle(context, conversationId)
-        DmReplyMessagingService.buildAndShowNotification(context, conversationId, targetUid, conversationTitle, "/#message")
+        NotificationManagerCompat.from(context).cancel(notificationId)
 
         enqueueSendWorker(context, targetUid, notificationId, replyText)
     }
