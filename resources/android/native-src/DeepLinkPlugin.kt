@@ -1,5 +1,6 @@
 package com.leafmash.app
 
+import androidx.core.app.NotificationManagerCompat
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
@@ -13,5 +14,17 @@ class DeepLinkPlugin : Plugin() {
         val ret = JSObject()
         ret.put("url", MainActivity.consumePendingDeepLink())
         call.resolve(ret)
+    }
+
+    @PluginMethod
+    fun clearDmNotification(call: PluginCall) {
+        val conversationId = call.getString("conversationId")
+        if (conversationId == null) {
+            call.reject("conversationId is required")
+            return
+        }
+        DmConversationStore.clear(context, conversationId)
+        NotificationManagerCompat.from(context).cancel(conversationId.hashCode())
+        call.resolve()
     }
 }

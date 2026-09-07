@@ -37,16 +37,7 @@ class DmReplyReceiver : BroadcastReceiver() {
     }
 
     private suspend fun handleReply(context: Context, conversationId: String, targetUid: String, notificationId: Int, replyText: String) {
-        DmConversationStore.addMessage(
-            context,
-            conversationId,
-            replyText,
-            fromMe = true,
-            senderName = "You",
-            timestamp = System.currentTimeMillis()
-        )
-
-        DmConversationStore.resetUnread(context, conversationId)
+        DmConversationStore.clear(context, conversationId)
 
         NotificationManagerCompat.from(context).cancel(notificationId)
 
