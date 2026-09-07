@@ -46,6 +46,9 @@ jobs:
       - name: Inject notification icon
         run: python3 scripts/ci/inject-notification-icon.py
 
+      - name: Inject notification sound
+        run: python3 scripts/ci/inject-notification-sound.py
+
       - name: Inject DM notification reply
         run: python3 scripts/ci/inject-dm-reply.py
 
