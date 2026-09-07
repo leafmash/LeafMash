@@ -571,6 +571,7 @@ export function teardownDmThread() {
   dmTypingCheckInterval = null;
   clearMyTypingSignal(conversationId);
   paintDmTypingIndicator();
+  window.Capacitor?.Plugins?.LeafMashDeepLink?.clearActiveConversation().catch(() => {});
 }
 
 function dmThreadSkeletonHtml() {
@@ -684,6 +685,7 @@ export async function openDmThread(uid, { fromPopstate = false, replace = false 
   }
   if (uid !== currentDmUid) return; 
   currentDmConversationId = conversationId;
+  window.Capacitor?.Plugins?.LeafMashDeepLink?.setActiveConversation({ conversationId }).catch(() => {});
   markConversationRead(conversationId);
   if (dmTypingCheckInterval) clearInterval(dmTypingCheckInterval);
   dmTypingCheckInterval = setInterval(paintDmTypingIndicator, 1000);
