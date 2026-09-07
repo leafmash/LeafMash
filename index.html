@@ -1459,8 +1459,17 @@
   .profile-more-menu .kebab-btn:active { transform:scale(.94); }
   .profile-more-menu.is-blocking .kebab-btn { color: var(--color-danger-600); background: var(--color-clay-100); border-color:transparent; }
   .profile-more-menu .kebab-dropdown { min-width:200px; }
-  .profile-social-icon-btn { @apply inline-flex items-center justify-center rounded-full shrink-0 transition-transform; width:32px; height:32px; background: var(--color-paper-deep); color: var(--color-ink-soft); border:1px solid var(--color-line); }
-  .profile-social-icon-btn:active { transform:scale(.94); background: var(--color-forest-100); color: var(--color-forest-700); }
+  .profile-social-icon-btn { @apply inline-flex items-center justify-center rounded-full shrink-0 transition-transform text-white; width:32px; height:32px; background: linear-gradient(135deg, var(--color-forest-600), var(--color-forest-800)); box-shadow: var(--shadow-btn); }
+  .profile-social-icon-btn:active { transform:scale(.94); filter:brightness(.95); }
+  .profile-social-icon-btn.sc-facebook { background:#1877f2; }
+  .profile-social-icon-btn.sc-instagram { background: linear-gradient(135deg, #f9ce34, #ee2a7b 45%, #6228d7); }
+  .profile-social-icon-btn.sc-x { background:#000; }
+  .profile-social-icon-btn.sc-linkedin { background:#0a66c2; }
+  .profile-social-icon-btn.sc-youtube { background:#ff0000; }
+  .profile-social-icon-btn.sc-github { background:#181717; }
+  .profile-social-icon-btn.sc-whatsapp { background:#25d366; }
+  .profile-social-icon-btn.sc-telegram { background:#26a5e4; }
+  .profile-social-icon-btn.sc-tiktok { background: linear-gradient(135deg, #25f4ee, #111 55%, #fe2c55); }
 
   .avatar-sheet { @apply flex flex-col gap-1 -mx-1; }
   .avatar-sheet-item { @apply flex items-center gap-3 w-full text-left rounded-2xl text-[.92rem] font-bold; padding:13px 12px; color: var(--color-ink); }
