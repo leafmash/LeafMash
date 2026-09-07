@@ -29,7 +29,8 @@ async function notifyRecipient(db, uid, otherUid, { conversationId, messageId, t
     messageId: String(messageId),
     senderUid: uid,
     senderName: senderName || "",
-    senderPhotoURL: senderPhotoURL || ""
+    senderPhotoURL: senderPhotoURL || "",
+    sentAtMs: String(Date.now())
   };
 
   for (let i = 0; i < pairs.length; i += 500) {
