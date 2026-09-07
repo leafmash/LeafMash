@@ -85,7 +85,7 @@ export async function resolveProfile(req, res) {
         year: "",
         hometown: "",
         address: "",
-        socialLink: "",
+        socialLinks: [],
         hidePhone: false,
         hideEmail: false,
         nameChangedAt: null,

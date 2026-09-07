@@ -1,6 +1,6 @@
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getAdminApp, verifyCaller, requirePost, sendError, ApiError } from "../_lib/adminApp.js";
-import { requiredText, optionalText, enumOrEmpty, isOwnCloudinaryUrl } from "../_lib/validators.js";
+import { requiredText, optionalText, enumOrEmpty, isOwnCloudinaryUrl, validateSocialLinks } from "../_lib/validators.js";
 import { ADMIN_EMAILS } from "../../shared/admin-config.js";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -35,8 +35,7 @@ export async function updateProfile(req, res) {
     const session = optionalText(body.session, "Session", 40);
     const hometown = optionalText(body.hometown, "Hometown", 100);
     const address = optionalText(body.address, "Address", 150);
-    const socialLink = optionalText(body.socialLink, "Social link", 300);
-    if (socialLink && !/^https?:\/\//i.test(socialLink)) throw new ApiError(400, "Social link must start with http:// or https://.");
+    const socialLinks = validateSocialLinks(body.socialLinks);
     const bio = optionalText(body.bio, "Bio", 150);
     const hidePhone = !!body.hidePhone;
     const hideEmail = !!body.hideEmail;
@@ -68,7 +67,7 @@ export async function updateProfile(req, res) {
       if (body.year !== undefined) updates.year = year;
       if (body.hometown !== undefined) updates.hometown = hometown;
       if (body.address !== undefined) updates.address = address;
-      if (body.socialLink !== undefined) updates.socialLink = socialLink;
+      if (body.socialLinks !== undefined) updates.socialLinks = socialLinks;
       if (gender) updates.gender = gender;
       if (photoURL) updates.photoURL = photoURL;
 
