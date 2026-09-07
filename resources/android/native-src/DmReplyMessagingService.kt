@@ -17,11 +17,15 @@ import androidx.core.app.RemoteInput
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
+import com.google.android.gms.tasks.Tasks
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 import PLUGIN_MESSAGING_SERVICE_IMPORT
 
 class DmReplyMessagingService : MessagingService() {
@@ -60,8 +64,28 @@ class DmReplyMessagingService : MessagingService() {
             return
         }
 
+        if (isAlreadyReadRemotely(conversationId, data["sentAtMs"])) {
+            DmConversationStore.resetUnread(context, conversationId)
+            return
+        }
+
         DmConversationStore.incrementUnread(context, conversationId)
         buildAndShowNotification(context, conversationId, senderUid, senderName, data["url"] ?: "/#message")
+    }
+
+    private fun isAlreadyReadRemotely(conversationId: String, sentAtMs: String?): Boolean {
+        val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: return false
+        val sentAt = sentAtMs?.toLongOrNull() ?: return false
+        return try {
+            val snapshot = Tasks.await(
+                FirebaseFirestore.getInstance().collection("conversations").document(conversationId).get(),
+                5, TimeUnit.SECONDS
+            )
+            val lastReadAt = snapshot.getTimestamp("lastReadAt.$myUid") ?: return false
+            lastReadAt.toDate().time >= sentAt
+        } catch (e: Exception) {
+            false
+        }
     }
 
     companion object {
