@@ -61,6 +61,7 @@ class DmReplyMessagingService : MessagingService() {
             .setStyle(buildMessagingStyle(context, conversationId, senderName, senderUid))
             .setAutoCancel(true)
             .setContentIntent(buildOpenPendingIntent(context, notificationId, conversationId, data["url"] ?: "/#message"))
+            .setDeleteIntent(buildDeletePendingIntent(context, notificationId, conversationId))
             .addAction(buildReplyAction(context, conversationId, senderUid, notificationId))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setNumber(unreadCount)
@@ -129,15 +130,27 @@ class DmReplyMessagingService : MessagingService() {
             )
         }
 
+        fun buildDeletePendingIntent(context: Context, notificationId: Int, conversationId: String): PendingIntent {
+            val deleteIntent = Intent(context, DmNotificationDismissReceiver::class.java).apply {
+                putExtra(DmNotificationDismissReceiver.EXTRA_CONVERSATION_ID, conversationId)
+            }
+            return PendingIntent.getBroadcast(
+                context,
+                notificationId,
+                deleteIntent,
+                PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        }
+
         suspend fun buildMessagingStyle(context: Context, conversationId: String, conversationTitle: String, otherUid: String): NotificationCompat.MessagingStyle {
-            val mePerson = Person.Builder().setName("You").setIcon(blankIcon()).build()
+            val mePerson = Person.Builder().setName("You").setKey("leafmash_me").setIcon(blankIcon()).build()
             val style = NotificationCompat.MessagingStyle(mePerson)
                 .setConversationTitle(conversationTitle)
                 .setGroupConversation(true)
 
             val photoUrl = DmConversationStore.getSenderPhotoUrl(context, conversationId)
             val otherIcon = DmAvatarLoader.load(photoUrl)
-            val otherPersonBuilder = Person.Builder().setName(conversationTitle).setImportant(true)
+            val otherPersonBuilder = Person.Builder().setName(conversationTitle).setKey(otherUid).setImportant(true)
             otherIcon?.let { otherPersonBuilder.setIcon(it) }
             val otherPerson = otherPersonBuilder.build()
 
