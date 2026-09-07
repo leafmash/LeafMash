@@ -673,38 +673,46 @@
   .chat-bubble-row .avatar { width:26px; height:26px; box-shadow:none; }
   .chat-bubble-group { @apply flex flex-col gap-0.5 min-w-0; }
   .chat-bubble-row.mine .chat-bubble-group { @apply items-end; }
-  .chat-bubble-name { @apply flex items-center gap-1.5 text-[.7rem] font-extrabold pl-1; color: var(--color-forest-700); }
-  .chat-bubble-name::before { content:""; width:5px; height:5px; border-radius:50%; background: var(--color-gold-500); }
+  .chat-bubble-name { @apply text-[.7rem] font-extrabold pl-1; color: var(--color-forest-700); }
   .chat-bubble {
-    @apply relative text-[.87rem] leading-relaxed break-words transition-transform; padding:10px 14px;
-    background: var(--color-surface); color: var(--color-ink);
-    border:1px solid var(--color-line);
-    border-radius: 19px 19px 19px 6px;
-    box-shadow: var(--shadow-card), inset 0 1px 0 color-mix(in srgb, var(--color-surface) 60%, white 40%);
+    @apply relative text-[.87rem] leading-snug break-words transition-transform; padding:9px 13px;
+    background: var(--color-surface); color: var(--color-ink); border:1px solid var(--color-line);
+    border-radius: 18px 18px 18px 0;
+    box-shadow: var(--shadow-card);
     -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
   }
-  .chat-bubble-row.mine .chat-bubble {
-    @apply text-white;
-    background: linear-gradient(160deg, var(--color-forest-500) 0%, var(--color-forest-600) 45%, var(--color-forest-800) 100%);
-    border-color: transparent;
-    border-radius: 19px 19px 6px 19px;
-    box-shadow: 0 5px 16px rgba(15,46,29,.28), inset 0 1px 0 rgba(255,255,255,.16);
+  .chat-bubble::after {
+    content:""; position:absolute; left:-1px; bottom:-1px; width:11px; height:11px;
+    background: var(--color-paper); clip-path: polygon(0 0, 100% 100%, 0 100%);
+    pointer-events:none;
   }
-  .chat-bubble-row:not(.mine) .chat-bubble { border-top-color: color-mix(in srgb, var(--color-gold-500) 30%, var(--color-line)); }
+  .chat-bubble-row.mine .chat-bubble {
+    @apply text-white; background: linear-gradient(135deg, var(--color-forest-600), var(--color-forest-800));
+    border-color:transparent;
+    border-radius: 18px 18px 0 18px;
+    box-shadow: 0 4px 14px rgba(26,76,48,.24);
+  }
+  .chat-bubble-row.mine .chat-bubble::after {
+    left:auto; right:-1px; clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  }
   .chat-bubble:active { transform:scale(.97); }
-  .chat-bubble-meta { @apply flex items-center gap-1 px-1.5 text-[.64rem] font-bold tracking-wide; color: var(--color-ink-faint); }
+  .chat-bubble-meta { @apply flex items-center gap-1.5 px-1 text-[.65rem] font-semibold; color: var(--color-ink-faint); }
   .chat-bubble-row.mine .chat-bubble-meta { @apply flex-row-reverse; }
-  .chat-bubble-meta:has(.chat-receipt) > span::after { content:"·"; margin-left:5px; opacity:.6; }
   .chat-receipt { @apply inline-flex items-center shrink-0; color: var(--color-ink-faint); transition: color .25s ease; }
   .chat-receipt.seen { color: var(--color-gold-600); }
   .chat-receipt svg { display:block; }
   .dm-typing-indicator { @apply flex items-center shrink-0; padding:0 14px 6px; }
   .dm-typing-indicator.hidden { @apply hidden; }
   .dm-typing-bubble {
-    @apply inline-flex items-center gap-1 rounded-[19px]; padding:10px 14px;
+    @apply relative inline-flex items-center gap-1; padding:9px 13px;
     background: var(--color-surface); border:1px solid var(--color-line);
-    border-radius: 19px 19px 19px 6px;
+    border-radius: 18px 18px 18px 0;
     box-shadow: var(--shadow-card);
+  }
+  .dm-typing-bubble::after {
+    content:""; position:absolute; left:-1px; bottom:-1px; width:11px; height:11px;
+    background: var(--color-paper); clip-path: polygon(0 0, 100% 100%, 0 100%);
+    pointer-events:none;
   }
   .dm-typing-bubble span {
     @apply inline-block rounded-full; width:5px; height:5px;
