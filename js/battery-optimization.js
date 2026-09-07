@@ -7,13 +7,22 @@ export async function requestBatteryOptimizationExemption() {
   await BatteryOptimization.requestExemption().catch(() => {});
 }
 
+export async function requestAutostartSettings() {
+  if (!isNativeApp || !BatteryOptimization) return;
+  const { available } = await BatteryOptimization.hasAutostartSettings().catch(() => ({ available: false }));
+  if (!available) return;
+  await BatteryOptimization.openAutostartSettings().catch(() => {});
+}
+
 export async function initBatteryOptimizationPrompt() {
   if (!isNativeApp || !BatteryOptimization) return;
   if (localStorage.getItem(PROMPTED_KEY) === "1") return;
 
   const { ignoring } = await BatteryOptimization.isIgnoringBatteryOptimizations().catch(() => ({ ignoring: true }));
   localStorage.setItem(PROMPTED_KEY, "1");
-  if (ignoring) return;
+  if (!ignoring) {
+    await requestBatteryOptimizationExemption();
+  }
 
-  await requestBatteryOptimizationExemption();
+  await requestAutostartSettings();
 }
