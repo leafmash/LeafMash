@@ -331,6 +331,11 @@
     @apply opacity-60 cursor-not-allowed;
   }
   .pd-name-hint { @apply text-[.72rem] leading-snug pl-1; color: var(--color-ink-faint); }
+  .pd-social-list { @apply flex flex-col gap-2; }
+  .pd-social-row { @apply flex items-center gap-2; }
+  .pd-social-remove-btn { @apply flex items-center justify-center rounded-full shrink-0; width:36px; height:36px; background: var(--color-paper-deep); color: var(--color-ink-faint); border:1px solid var(--color-line); }
+  .pd-social-remove-btn:active { background: var(--color-clay-100); color: var(--color-danger-600); }
+  .pd-social-add-btn.hidden { @apply hidden; }
 
   .field-line-input-wrap { @apply relative flex items-center w-full; }
   .field-line-icon {
@@ -1461,6 +1466,7 @@
   .profile-more-menu .kebab-dropdown { min-width:200px; }
   .profile-social-icon-btn { @apply inline-flex items-center justify-center rounded-full shrink-0 transition-transform text-white; width:32px; height:32px; background: linear-gradient(135deg, var(--color-forest-600), var(--color-forest-800)); box-shadow: var(--shadow-btn); }
   .profile-social-icon-btn:active { transform:scale(.94); filter:brightness(.95); }
+  .profile-social-row { @apply flex flex-wrap items-center justify-end gap-2; }
   .profile-social-icon-btn.sc-facebook { background:#1877f2; }
   .profile-social-icon-btn.sc-instagram { background: linear-gradient(135deg, #f9ce34, #ee2a7b 45%, #6228d7); }
   .profile-social-icon-btn.sc-x { background:#000; }
