@@ -27,4 +27,21 @@ class DeepLinkPlugin : Plugin() {
         NotificationManagerCompat.from(context).cancel(conversationId.hashCode())
         call.resolve()
     }
+
+    @PluginMethod
+    fun setActiveConversation(call: PluginCall) {
+        val conversationId = call.getString("conversationId")
+        if (conversationId == null) {
+            call.reject("conversationId is required")
+            return
+        }
+        MainActivity.setActiveConversationId(conversationId)
+        call.resolve()
+    }
+
+    @PluginMethod
+    fun clearActiveConversation(call: PluginCall) {
+        MainActivity.setActiveConversationId(null)
+        call.resolve()
+    }
 }

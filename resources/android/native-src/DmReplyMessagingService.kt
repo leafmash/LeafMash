@@ -54,8 +54,13 @@ class DmReplyMessagingService : MessagingService() {
             DmConversationStore.setSenderPhotoUrl(context, conversationId, senderPhotoURL)
         }
         DmConversationStore.setConversationTitle(context, conversationId, senderName)
-        DmConversationStore.incrementUnread(context, conversationId)
 
+        if (conversationId == MainActivity.getActiveConversationId()) {
+            DmConversationStore.resetUnread(context, conversationId)
+            return
+        }
+
+        DmConversationStore.incrementUnread(context, conversationId)
         buildAndShowNotification(context, conversationId, senderUid, senderName, data["url"] ?: "/#message")
     }
 

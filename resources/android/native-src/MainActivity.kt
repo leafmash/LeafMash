@@ -22,6 +22,11 @@ class MainActivity : BridgeActivity() {
         bridge?.triggerJSEvent("leafmashNotificationTap", "window", "\"$escaped\"")
     }
 
+    override fun onPause() {
+        super.onPause()
+        activeConversationId = null
+    }
+
     private fun capturePendingDeepLink(intent: Intent?) {
         clearConversationHistory(intent)
         pendingDeepLink = extractUrl(intent)
@@ -45,11 +50,22 @@ class MainActivity : BridgeActivity() {
         @Volatile
         private var pendingDeepLink: String? = null
 
+        @Volatile
+        private var activeConversationId: String? = null
+
         @Synchronized
         fun consumePendingDeepLink(): String? {
             val url = pendingDeepLink
             pendingDeepLink = null
             return url
         }
+
+        @Synchronized
+        fun setActiveConversationId(conversationId: String?) {
+            activeConversationId = conversationId
+        }
+
+        @Synchronized
+        fun getActiveConversationId(): String? = activeConversationId
     }
 }
