@@ -62,6 +62,7 @@ class DmReplyReceiver : BroadcastReceiver() {
             .addAction(DmReplyMessagingService.buildReplyAction(context, conversationId, targetUid, notificationId))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setSilent(true)
+            .setNumber(0)
             .setShortcutId(conversationId)
             .build()
 
