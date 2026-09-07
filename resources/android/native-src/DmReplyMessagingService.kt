@@ -7,6 +7,8 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.media.AudioAttributes
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -58,7 +60,7 @@ class DmReplyMessagingService : MessagingService() {
     }
 
     companion object {
-        const val DM_CHANNEL_ID = "leafmash_dm_channel"
+        const val DM_CHANNEL_ID = "leafmash_dm_channel_v2"
 
         suspend fun buildAndShowNotification(context: Context, conversationId: String, otherUid: String, conversationTitle: String, url: String) {
             val notificationId = conversationId.hashCode()
@@ -84,6 +86,12 @@ class DmReplyMessagingService : MessagingService() {
             val manager = context.getSystemService(NotificationManager::class.java) ?: return
             if (manager.getNotificationChannel(DM_CHANNEL_ID) != null) return
             val channel = NotificationChannel(DM_CHANNEL_ID, "Direct messages", NotificationManager.IMPORTANCE_HIGH)
+            val soundUri = Uri.parse("android.resource://${context.packageName}/raw/leafmash_message")
+            val audioAttributes = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+            channel.setSound(soundUri, audioAttributes)
             manager.createNotificationChannel(channel)
         }
 
