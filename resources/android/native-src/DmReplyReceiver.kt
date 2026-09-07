@@ -3,7 +3,6 @@ package com.leafmash.app
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.RemoteInput
 import androidx.work.Constraints
@@ -47,26 +46,9 @@ class DmReplyReceiver : BroadcastReceiver() {
             timestamp = System.currentTimeMillis()
         )
 
-        DmReplyMessagingService.ensureChannel(context)
         DmConversationStore.resetUnread(context, conversationId)
 
-        val conversationTitle = DmConversationStore.getMessages(context, conversationId)
-            .lastOrNull { !it.fromMe }?.senderName ?: "LeafMash"
-
-        val notification = NotificationCompat.Builder(context, DmReplyMessagingService.DM_CHANNEL_ID)
-            .setSmallIcon(DmReplyMessagingService.resolveIcon(context))
-            .setStyle(DmReplyMessagingService.buildMessagingStyle(context, conversationId, conversationTitle, targetUid))
-            .setAutoCancel(true)
-            .setContentIntent(DmReplyMessagingService.buildOpenPendingIntent(context, notificationId, conversationId, "/#dm-thread?id=$targetUid"))
-            .setDeleteIntent(DmReplyMessagingService.buildDeletePendingIntent(context, notificationId, conversationId))
-            .addAction(DmReplyMessagingService.buildReplyAction(context, conversationId, targetUid, notificationId))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setSilent(true)
-            .setNumber(0)
-            .setShortcutId(conversationId)
-            .build()
-
-        NotificationManagerCompat.from(context).notify(notificationId, notification)
+        NotificationManagerCompat.from(context).cancel(notificationId)
 
         enqueueSendWorker(context, targetUid, notificationId, replyText)
     }
