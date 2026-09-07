@@ -3,7 +3,8 @@ import { collection, query, where, getDocs } from "https://www.gstatic.com/fireb
 import { fetchProfile } from "./auth.js";
 import {
   escapeHtml, escapeAttr, getCachedProfile, cacheUserProfile, avatarInner, nameWithBadge,
-  isAdminEmail, adminBadgeHtml, fullDate, showToast, friendlyError, confirmDialog, wireKebabMenus
+  isAdminEmail, adminBadgeHtml, fullDate, showToast, friendlyError, confirmDialog, wireKebabMenus,
+  socialLinkIconHtml
 } from "./ui-utils.js";
 import { loadUserResources } from "./resources.js";
 import { renderPost } from "./wall.js";
@@ -78,7 +79,7 @@ function renderProfilePage(profile, uid) {
   if (profile.session) rows.push(["Session / Batch", escapeHtml(profile.session)]);
   if (profile.hometown) rows.push(["Hometown", escapeHtml(profile.hometown)]);
   if (profile.address) rows.push(["Present Address", escapeHtml(profile.address)]);
-  if (profile.socialLink) rows.push(["Social / Facebook", `<a href="${escapeAttr(profile.socialLink)}" target="_blank" rel="noopener">Visit</a>`]);
+  if (profile.socialLink) rows.push(["Social", socialLinkIconHtml(profile.socialLink)]);
   rows.push(["Email", profile.hideEmail ? `<span class="hidden-field-tag">Hidden</span>` : escapeHtml(profile.email || "—")]);
   rows.push(["Phone", (profile.hidePhone || !profile.phone) ? `<span class="hidden-field-tag">${profile.phone ? "Hidden" : "Not set"}</span>` : escapeHtml(profile.phone)]);
   rows.push(["College", escapeHtml(COLLEGE_NAME)]);
@@ -109,20 +110,19 @@ function renderProfilePage(profile, uid) {
         <div class="profile-stat-chip"><strong>${escapeHtml(profile.year || profile.session || "—")}</strong><span>Year</span></div>
       </div>
 
-      <!-- Facebook-style action row: Message is the one wide primary
-           button, Call (when this classmate hasn't hidden their number)
-           and "more" (Block/Unblock) are small round icon buttons beside
-           it — sits right under the stats, above the tabs, instead of
-           buried at the bottom of the Info tab. -->
       <div class="profile-action-row">
         <button type="button" id="user-profile-message-btn" class="profile-action-primary">
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H8l-4.5 4V6.5a1 1 0 0 1 1-1z"/></svg>
           Message
         </button>
-        ${(!profile.hidePhone && profile.phone) ? `
+        ${profile.phone ? (profile.hidePhone ? `
+        <button type="button" class="profile-action-icon-btn is-locked" id="user-profile-call-locked-btn" aria-label="Call number hidden">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <svg class="profile-action-icon-btn-lock" viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M12 2a4 4 0 0 0-4 4v2H7a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1h-1V6a4 4 0 0 0-4-4zm0 2a2 2 0 0 1 2 2v2h-4V6a2 2 0 0 1 2-2z"/></svg>
+        </button>` : `
         <a class="profile-action-icon-btn" href="tel:${escapeAttr(profile.phone)}" aria-label="Call ${escapeAttr((profile.name || "").split(" ")[0] || "")}">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-        </a>` : ""}
+        </a>`) : ""}
         <div class="kebab-menu profile-more-menu" id="user-profile-more-menu">
           <button type="button" class="kebab-btn" aria-label="More options" aria-haspopup="true">
             <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>
@@ -132,7 +132,6 @@ function renderProfilePage(profile, uid) {
           </div>
         </div>
       </div>
-      ${(!profile.hidePhone && profile.phone) ? "" : `<p class="pv-call-disabled">This student has hidden their contact number.</p>`}
 
       <div class="profile-tabs" role="tablist">
         <button type="button" class="profile-tab-btn active" data-tab="info" role="tab" id="user-profile-tab-info" aria-selected="true" aria-controls="user-profile-panel-info">Info</button>
@@ -157,6 +156,9 @@ function renderProfilePage(profile, uid) {
   `;
 
   cardEl.querySelector("#user-profile-message-btn")?.addEventListener("click", () => openDmThread(uid));
+  cardEl.querySelector("#user-profile-call-locked-btn")?.addEventListener("click", () => {
+    showToast("This student has hidden their contact number.");
+  });
 
   const moreMenu = cardEl.querySelector("#user-profile-more-menu");
   const blockItem = cardEl.querySelector("#user-profile-block-item");

@@ -21,7 +21,7 @@ import { openUserProfilePage, loadUserPosts, registerProfilePageRouter, getOpenP
 import { openPostDetailPage, registerPostDetailRouter, teardownPostDetail, getOpenPostId } from "./post-detail.js";
 import {
   escapeHtml, escapeAttr, openModal, closeModal, showToast, setBtnLoading, fullDate,
-  avatarInner, nameWithBadge, isAdminEmail, adminBadgeHtml, friendlyError
+  avatarInner, nameWithBadge, isAdminEmail, adminBadgeHtml, friendlyError, socialLinkIconHtml
 } from "./ui-utils.js";
 import { uploadImage } from "./cloudinary.js";
 import { isAcceptableImageFile, openImageViewer } from "./media-picker.js";
@@ -521,7 +521,7 @@ function renderProfile() {
     ["Present Address", escapeHtml(p.address || "Not set")],
     ["Phone", `${escapeHtml(p.phone || "Not set")}${p.hidePhone ? ' <span class="hidden-field-tag">Hidden</span>' : ""}`],
     ["Email", `${escapeHtml(p.email)}${p.hideEmail ? ' <span class="hidden-field-tag">Hidden</span>' : ""}`],
-    ["Social / Facebook", p.socialLink ? `<a href="${escapeAttr(p.socialLink)}" target="_blank" rel="noopener">${escapeHtml(p.socialLink)}</a>` : "Not set"],
+    ["Social", p.socialLink ? socialLinkIconHtml(p.socialLink) : "Not set"],
     ["College", escapeHtml(COLLEGE_NAME)]
   ];
   if (joined) rows.push(["Joined LeafMash", joined]);
@@ -831,8 +831,8 @@ function openProfileDetailsModal(isFirstTime = false) {
       <input type="text" id="pd-address" placeholder="e.g. Hostel / Mess address" value="${escapeAttr(currentProfile.address || "")}" />
     </label>
     <label class="field">
-      <span>Social / Facebook Link</span>
-      <input type="url" id="pd-social" placeholder="https://facebook.com/…" value="${escapeAttr(currentProfile.socialLink || "")}" />
+      <span>Social Link</span>
+      <input type="url" id="pd-social" placeholder="https://facebook.com/… or any social profile URL" value="${escapeAttr(currentProfile.socialLink || "")}" />
     </label>
     <label class="field">
       <span>About / Bio</span>
