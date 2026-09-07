@@ -493,6 +493,7 @@ function markConversationRead(conversationId) {
     [`unread.${myUid}`]: 0,
     [`lastReadAt.${myUid}`]: serverTimestamp()
   }).catch(() => {});
+  window.Capacitor?.Plugins?.LeafMashDeepLink?.clearDmNotification({ conversationId }).catch(() => {});
 }
 
 const DM_TYPING_RESEND_MS = 2500;
