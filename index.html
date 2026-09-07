@@ -690,9 +690,9 @@
   .chat-bubble-row.mine .chat-bubble-group { @apply items-end; }
   .chat-bubble-name { @apply text-[.7rem] font-extrabold pl-1; color: var(--color-forest-700); }
   .chat-bubble {
-    @apply relative text-[.87rem] leading-snug rounded-[18px] break-words transition-transform; padding:9px 13px;
+    @apply relative text-[.87rem] leading-snug rounded-[18px] break-words min-w-0 transition-transform; padding:9px 13px;
     background: var(--color-surface); color: var(--color-ink); border:1px solid var(--color-line); border-bottom-left-radius:5px;
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--shadow-card); overflow-wrap:anywhere; word-break:break-word;
     -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
   }
   .chat-bubble-row.mine .chat-bubble {
@@ -1452,11 +1452,15 @@
     width:46px; height:46px; background: var(--color-paper-deep); color: var(--color-ink-soft); border:1px solid var(--color-line);
   }
   .profile-action-icon-btn:active { transform:scale(.94); background: var(--color-forest-100); color: var(--color-forest-700); }
+  .profile-action-icon-btn.is-locked { @apply relative; color: var(--color-ink-faint); opacity:.6; cursor:not-allowed; }
+  .profile-action-icon-btn.is-locked:active { transform:none; background: var(--color-paper-deep); color: var(--color-ink-faint); }
+  .profile-action-icon-btn-lock { @apply absolute rounded-full; right:-2px; bottom:-2px; padding:2px; background: var(--color-paper-deep); border:1px solid var(--color-line); color: var(--color-ink-faint); }
   .profile-more-menu .kebab-btn { width:46px; height:46px; background: var(--color-paper-deep); color: var(--color-ink-soft); border:1px solid var(--color-line); }
   .profile-more-menu .kebab-btn:active { transform:scale(.94); }
   .profile-more-menu.is-blocking .kebab-btn { color: var(--color-danger-600); background: var(--color-clay-100); border-color:transparent; }
   .profile-more-menu .kebab-dropdown { min-width:200px; }
-  .pv-call-disabled { @apply text-center text-[.8rem]; color: var(--color-ink-faint); margin:14px 2px 2px; }
+  .profile-social-icon-btn { @apply inline-flex items-center justify-center rounded-full shrink-0 transition-transform; width:32px; height:32px; background: var(--color-paper-deep); color: var(--color-ink-soft); border:1px solid var(--color-line); }
+  .profile-social-icon-btn:active { transform:scale(.94); background: var(--color-forest-100); color: var(--color-forest-700); }
 
   .avatar-sheet { @apply flex flex-col gap-1 -mx-1; }
   .avatar-sheet-item { @apply flex items-center gap-3 w-full text-left rounded-2xl text-[.92rem] font-bold; padding:13px 12px; color: var(--color-ink); }
