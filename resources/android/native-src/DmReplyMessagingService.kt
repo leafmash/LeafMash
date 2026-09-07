@@ -68,7 +68,9 @@ class DmReplyMessagingService : MessagingService() {
             .setShortcutId(conversationId)
             .build()
 
-        NotificationManagerCompat.from(context).notify(notificationId, notification)
+        val manager = NotificationManagerCompat.from(context)
+        manager.cancel(notificationId)
+        manager.notify(notificationId, notification)
     }
 
     companion object {
