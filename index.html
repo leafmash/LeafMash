@@ -3,16 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
-<title>GeoMash · Geography &amp; Environment Dept.</title>
+<title>LeafMash · Geography &amp; Environment Dept.</title>
 <meta name="theme-color" content="#173821" />
-<meta name="description" content="GeoMash — student wall, notes &amp; sheets, classmates directory and routine for the Geography &amp; Environment Dept." />
+<meta name="description" content="LeafMash — student wall, notes &amp; sheets, classmates directory and routine for the Geography &amp; Environment Dept." />
 
 <script>
-  // Buffer native "notification tapped" events fired before js/app.js
-  // (an ES module, so it runs after HTML parsing) has attached its
-  // real listener. Without this, a cold-start tap on Android is lost
-  // because bridge.triggerJSEvent() dispatches immediately in
-  // MainActivity.onCreate(), often before any listener exists yet.
   window.__leafmashPendingDeepLinks = [];
   window.addEventListener("leafmashNotificationTap", function (e) {
     window.__leafmashPendingDeepLinks.push(e.detail);
@@ -180,6 +175,12 @@
 @keyframes picker-pop { 0%{ opacity:0; transform:scale(.55) translateY(8px); } 65%{ opacity:1; transform:scale(1.06) translateY(-2px); } 100%{ opacity:1; transform:scale(1) translateY(0); } }
 @keyframes dot-pulse  { 0%,80%,100%{ opacity:.3; transform:scale(.85);} 40%{ opacity:1; transform:scale(1.12);} }
 @keyframes dot-wave   { 0%,60%,100%{ opacity:.25; transform:scale(.7);} 30%{ opacity:1; transform:scale(1.2);} }
+@keyframes dot-seq-1  { 0%,90%{ opacity:1; transform:scale(1.05);} 94%,100%{ opacity:.3; transform:scale(.85);} }
+@keyframes dot-seq-2  { 0%,14%{ opacity:.3; transform:scale(.85);} 18%,90%{ opacity:1; transform:scale(1.05);} 94%,100%{ opacity:.3; transform:scale(.85);} }
+@keyframes dot-seq-3  { 0%,28%{ opacity:.3; transform:scale(.85);} 32%,90%{ opacity:1; transform:scale(1.05);} 94%,100%{ opacity:.3; transform:scale(.85);} }
+@keyframes dot-seq-4  { 0%,42%{ opacity:.3; transform:scale(.85);} 46%,90%{ opacity:1; transform:scale(1.05);} 94%,100%{ opacity:.3; transform:scale(.85);} }
+@keyframes dot-seq-5  { 0%,56%{ opacity:.3; transform:scale(.85);} 60%,90%{ opacity:1; transform:scale(1.05);} 94%,100%{ opacity:.3; transform:scale(.85);} }
+@keyframes dot-seq-6  { 0%,70%{ opacity:.3; transform:scale(.85);} 74%,90%{ opacity:1; transform:scale(1.05);} 94%,100%{ opacity:.3; transform:scale(.85);} }
 @keyframes ring-spin  { to{ transform:rotate(360deg);} }
 @keyframes contour-drift { from{ background-position:0 0;} to{ background-position:-120px 0;} }
 @keyframes compass-spin { to{ transform:rotate(360deg);} }
@@ -238,13 +239,15 @@
   .loading-dots { @apply inline-flex items-center; gap:6px; }
   .loading-dots span {
     @apply inline-block rounded-full shrink-0; width:7px; height:7px;
-    background: var(--color-gold-500); animation: dot-wave 1.2s ease-in-out infinite;
+    background: var(--color-gold-500);
+    animation-duration:2.4s; animation-timing-function:ease; animation-iteration-count:infinite;
   }
-  .loading-dots span:nth-child(2) { animation-delay:.1s; }
-  .loading-dots span:nth-child(3) { animation-delay:.2s; }
-  .loading-dots span:nth-child(4) { animation-delay:.3s; }
-  .loading-dots span:nth-child(5) { animation-delay:.4s; }
-  .loading-dots span:nth-child(6) { animation-delay:.5s; }
+  .loading-dots span:nth-child(1) { animation-name: dot-seq-1; }
+  .loading-dots span:nth-child(2) { animation-name: dot-seq-2; }
+  .loading-dots span:nth-child(3) { animation-name: dot-seq-3; }
+  .loading-dots span:nth-child(4) { animation-name: dot-seq-4; }
+  .loading-dots span:nth-child(5) { animation-name: dot-seq-5; }
+  .loading-dots span:nth-child(6) { animation-name: dot-seq-6; }
   .loading-dots.is-complete span {
     animation: none; opacity:1; transform:scale(1);
     transition: opacity .2s ease, transform .2s ease;
