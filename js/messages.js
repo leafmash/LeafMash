@@ -1,11 +1,12 @@
 import { auth, db } from "./firebase-config.js";
 import {
   collection, doc, query, where, orderBy, limitToLast,
-  addDoc, updateDoc, setDoc, getDoc, deleteDoc, serverTimestamp, increment,
+  addDoc, updateDoc, setDoc, getDoc, deleteDoc, serverTimestamp,
   arrayUnion, arrayRemove, deleteField
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import { onSnapshotWithRetry } from "./realtime-retry.js";
 import { currentProfile, fetchProfile } from "./auth.js";
+import { callApi } from "./api-client.js";
 import {
   escapeHtml, escapeAttr, showToast, friendlyError, avatarInner, nameWithBadge,
   getCachedProfile, cacheUserProfile, ensureProfileLoaded, subscribeToProfileUpdates,
@@ -400,9 +401,16 @@ function otherParticipant(conv) {
   return (conv.participants || []).find(uid => uid !== myUid) || null;
 }
 
+function isConversationUnread(c, myUid) {
+  if (!c.lastSenderUid || c.lastSenderUid === myUid) return false;
+  const lastMs = c.lastMessageAt?.toMillis?.() || 0;
+  const readMs = c.lastReadAt?.[myUid]?.toMillis?.() || 0;
+  return lastMs > readMs;
+}
+
 function paintTotalUnreadBadges() {
   const myUid = auth.currentUser?.uid;
-  dmUnreadTotal = allConversations.reduce((sum, c) => sum + (Number(c.unread?.[myUid]) || 0), 0);
+  dmUnreadTotal = allConversations.filter(c => isConversationUnread(c, myUid)).length;
   if (dmTabBadge) {
     dmTabBadge.textContent = dmUnreadTotal > 99 ? "99+" : String(dmUnreadTotal);
     dmTabBadge.classList.toggle("hidden", dmUnreadTotal === 0);
@@ -425,7 +433,7 @@ function renderConversationList() {
     if (!uid) return "";
     ensureProfileLoaded(uid);
     const profile = getCachedProfile(uid) || { uid, name: "Classmate" };
-    const unread = Number(c.unread?.[myUid]) || 0;
+    const unread = isConversationUnread(c, myUid);
     const mineLast = c.lastSenderUid === myUid;
     const previewText = c.lastMessageText
       ? `${mineLast ? "You: " : ""}${c.lastMessageText}`
@@ -438,11 +446,11 @@ function renderConversationList() {
         </span>
         <div class="dm-conv-info">
           <strong>${nameWithBadge(profile.name || "Classmate", profile.email, uid)}</strong>
-          <div class="dm-conv-preview ${unread > 0 ? "unread" : ""}">${escapeHtml(previewText)}</div>
+          <div class="dm-conv-preview ${unread ? "unread" : ""}">${escapeHtml(previewText)}</div>
         </div>
         <div class="dm-conv-meta">
           <span class="dm-conv-time">${c.lastMessageAt ? timeAgo(c.lastMessageAt) : ""}</span>
-          ${unread > 0 ? `<span class="dm-unread-dot">${unread > 99 ? "99+" : unread}</span>` : ""}
+          ${unread ? `<span class="dm-unread-dot"></span>` : ""}
         </div>
       </button>`;
   }).join("");
@@ -479,7 +487,6 @@ async function ensureConversation(otherUid) {
       lastMessageText: "",
       lastMessageAt: serverTimestamp(),
       lastSenderUid: null,
-      unread: { [myUid]: 0, [otherUid]: 0 },
       createdAt: serverTimestamp()
     });
   }
@@ -490,7 +497,6 @@ function markConversationRead(conversationId) {
   const myUid = auth.currentUser?.uid;
   if (!myUid || !conversationId) return;
   updateDoc(doc(db, "conversations", conversationId), {
-    [`unread.${myUid}`]: 0,
     [`lastReadAt.${myUid}`]: serverTimestamp()
   }).catch(() => {});
   window.Capacitor?.Plugins?.LeafMashDeepLink?.clearDmNotification({ conversationId }).catch(() => {});
@@ -739,26 +745,7 @@ async function submitDmMessage() {
   dmThreadAtBottom = true;
   clearMyTypingSignal(conversationId);
   try {
-    const myUid = auth.currentUser.uid;
-    const msgRef = await addDoc(collection(db, "conversations", conversationId, "messages"), {
-      senderUid: myUid,
-      text,
-      createdAt: serverTimestamp()
-    });
-    await updateDoc(doc(db, "conversations", conversationId), {
-      lastMessageText: text.length > 140 ? text.slice(0, 140) + "…" : text,
-      lastMessageAt: serverTimestamp(),
-      lastSenderUid: myUid,
-      [`unread.${otherUid}`]: increment(1)
-    });
-    triggerPush({
-      type: "dm",
-      text,
-      actorName: currentProfile?.name || auth.currentUser.email,
-      targetUid: otherUid,
-      conversationId,
-      messageId: msgRef.id
-    });
+    await callApi("send-dm-message", { targetUid: otherUid, text });
   } catch (err) {
     dmThreadInput.value = text;
     const { message, technical } = friendlyError(err, "Couldn't send that message.");

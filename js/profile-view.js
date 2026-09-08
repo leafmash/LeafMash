@@ -49,23 +49,29 @@ export async function openUserProfilePage(uid, { fromPopstate = false, replace =
 
   currentUid = uid;
   if (goToRouteRef) goToRouteRef("user-profile", { fromPopstate, replace, state: { profileUid: uid } });
-  cardEl.innerHTML = profileSkeletonHtml();
 
-  let profile = getCachedProfile(uid);
-  if (!profile) {
-    try {
-      profile = await fetchProfile(uid);
-      if (profile) cacheUserProfile(uid, profile);
-    } catch (err) {
-      cardEl.innerHTML = `<p class="empty-state">Couldn't load this profile.</p>`;
-      return;
-    }
+  const cachedProfile = getCachedProfile(uid);
+  if (cachedProfile) {
+    renderProfilePage(cachedProfile, uid);
+  } else {
+    cardEl.innerHTML = profileSkeletonHtml();
   }
-  if (!profile) {
-    cardEl.innerHTML = `<p class="empty-state">This student's profile couldn't be found.</p>`;
+
+  let freshProfile;
+  try {
+    freshProfile = await fetchProfile(uid);
+  } catch (err) {
+    if (uid !== currentUid) return;
+    if (!cachedProfile) cardEl.innerHTML = `<p class="empty-state">Couldn't load this profile.</p>`;
     return;
   }
-  renderProfilePage(profile, uid);
+  if (uid !== currentUid) return;
+  if (!freshProfile) {
+    if (!cachedProfile) cardEl.innerHTML = `<p class="empty-state">This student's profile couldn't be found.</p>`;
+    return;
+  }
+  cacheUserProfile(uid, freshProfile);
+  renderProfilePage(freshProfile, uid);
 }
 
 function renderProfilePage(profile, uid) {
