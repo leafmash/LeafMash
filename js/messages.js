@@ -201,8 +201,11 @@ function renderChatBubbles(listEl, docs, { emptyText, showNames = true, showAvat
         ${showAvatar ? (grouped ? `<span style="width:26px" aria-hidden="true"></span>` : `<span class="avatar" data-author="${escapeAttr(uid || "")}">${avatarInner(profile)}</span>`) : ""}
         <div class="chat-bubble-group">
           ${!mine && !grouped && showNames ? `<span class="chat-bubble-name">${nameWithBadge(profile.name || "Classmate", profile.email, uid)}</span>` : ""}
-          <div class="chat-bubble">${richTextHtml(m.text || "", [])}</div>
-          <div class="chat-bubble-meta"><span>${timeLabel}</span>${showReceipt ? (pending ? sendStatusIconHtml(m.sendStatus, isLastMine) : receiptIconHtml(seen, isLastMine)) : ""}</div>
+          <div class="chat-bubble">
+            <span class="chat-bubble-text">${richTextHtml(m.text || "", [])}</span>
+            ${showReceipt ? `<span class="chat-bubble-inline-meta">${pending ? sendStatusIconHtml(m.sendStatus, isLastMine) : receiptIconHtml(seen, isLastMine)}</span>` : ""}
+          </div>
+          <div class="chat-bubble-meta"><span>${timeLabel}</span></div>
         </div>
       </div>`;
   });
@@ -551,7 +554,12 @@ function dmTypingIndicatorEl() {
 function paintDmTypingIndicator() {
   const el = dmTypingIndicatorEl();
   if (!el) return;
-  el.classList.toggle("hidden", Date.now() >= dmOtherTypingUntilMs);
+  const shouldShow = Date.now() < dmOtherTypingUntilMs;
+  const wasHidden = el.classList.contains("hidden");
+  el.classList.toggle("hidden", !shouldShow);
+  if (shouldShow && wasHidden && dmThreadAtBottom && dmThreadListEl) {
+    requestAnimationFrame(() => { dmThreadListEl.scrollTop = dmThreadListEl.scrollHeight; });
+  }
 }
 
 function sendMyTypingSignal(conversationId) {

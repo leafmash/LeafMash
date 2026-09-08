@@ -424,6 +424,7 @@ document.getElementById("topbar-back-btn")?.addEventListener("click", () => {
 
 window.addEventListener("popstate", (e) => {
   if (appShell.classList.contains("hidden")) return;
+  const priorRoute = currentRoute;
   if (e.state && e.state.leafmashRoute) {
     if (e.state.leafmashRoute === "user-profile" && e.state.profileUid) {
       if (e.state.leafmashRoute === currentRoute && e.state.profileUid === getOpenProfileUid()) return;
@@ -434,15 +435,30 @@ window.addEventListener("popstate", (e) => {
     } else if (e.state.leafmashRoute === "dm-thread" && e.state.dmUid) {
       if (e.state.leafmashRoute === currentRoute && e.state.dmUid === getOpenDmUid()) return;
       openDmThread(e.state.dmUid, { fromPopstate: true });
-    } else {
-      if (e.state.leafmashRoute === currentRoute) return;
+    } else if (e.state.leafmashRoute !== currentRoute) {
       goToRoute(e.state.leafmashRoute, { fromPopstate: true });
+    }
+  }
+  if (!CapApp && e.state && e.state.leafmashRoute === "wall") {
+    if (priorRoute !== "wall") {
+      history.pushState({ leafmashRoute: "wall" }, "", buildHash("wall"));
+    } else if (webBackPressedOnce) {
+      webBackPressedOnce = false;
+    } else {
+      webBackPressedOnce = true;
+      showToast("আবার ব্যাক করলে অ্যাপ থেকে বেরিয়ে যাবেন");
+      history.pushState({ leafmashRoute: "wall" }, "", buildHash("wall"));
+      clearTimeout(webBackPressTimeout);
+      webBackPressTimeout = setTimeout(() => { webBackPressedOnce = false; }, 2000);
     }
   }
 });
 
 let backPressedOnce = false;
 let backPressTimeout = null;
+let webBackPressedOnce = false;
+let webBackPressTimeout = null;
+let webBufferPushed = false;
 
 if (CapApp) {
   CapApp.addListener("backButton", ({ canGoBack }) => {
@@ -1000,6 +1016,10 @@ watchAuthState(
       featuresInitialized = true;
     }
     restoreRouteFromHash();
+    if (!CapApp && !webBufferPushed) {
+      webBufferPushed = true;
+      history.pushState({ leafmashRoute: currentRoute }, "", location.hash);
+    }
     const nativeDeepLink = await consumeNativePendingDeepLink();
     if (nativeDeepLink) openDeepLink(nativeDeepLink);
     initPush({ requestPermission: true });
