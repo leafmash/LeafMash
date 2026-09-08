@@ -277,6 +277,7 @@ let routeFromMap = {};
 
 const TOPBAR_BACK_ROUTES = new Set(["search", "user-profile", "post-detail", "notices", "reports", "admin-verified", "settings"]);
 const FROM_TRACKED_ROUTES = new Set([...TOPBAR_BACK_ROUTES, "dm-thread"]);
+const BOTTOM_TAB_ROUTES = new Set(["wall", "resources", "message", "directory", "routine", "profile"]);
 
 function buildHash(route, id, from) {
   const params = new URLSearchParams();
@@ -377,7 +378,7 @@ function openDeepLink(url) {
   if (parsed.route === "user-profile" && parsed.id) openUserProfilePage(parsed.id);
   else if (parsed.route === "post-detail" && parsed.id) openPostDetailPage(parsed.id);
   else if (parsed.route === "dm-thread" && parsed.id) openDmThread(parsed.id);
-  else goToRoute(parsed.route);
+  else goToRoute(parsed.route, { replace: BOTTOM_TAB_ROUTES.has(parsed.route) });
 }
 registerNotificationTapHandler(openDeepLink);
 
@@ -401,7 +402,7 @@ document.querySelectorAll(".nav-item[data-route]").forEach(btn => {
   btn.addEventListener("click", () => {
     if (btn.dataset.route !== currentRoute) {
       hapticTap();
-      goToRoute(btn.dataset.route);
+      goToRoute(btn.dataset.route, { replace: BOTTOM_TAB_ROUTES.has(btn.dataset.route) });
     }
   });
 });
@@ -455,7 +456,7 @@ if (CapApp) {
     }
     if (currentRoute !== "wall") {
       hapticTap();
-      goToRoute("wall");
+      goToRoute("wall", { replace: true });
       return;
     }
     if (backPressedOnce) {

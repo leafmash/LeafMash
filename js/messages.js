@@ -141,12 +141,32 @@ function receiptIconHtml(seen, isLast) {
   </span>`;
 }
 
-function renderChatBubbles(listEl, docs, { emptyText, showNames = true, seenUpToMs = null }) {
+const lastRenderedIds = new WeakMap();
+
+function markIdsAsSeen(listEl, ids) {
+  const set = lastRenderedIds.get(listEl) || new Set();
+  ids.forEach(id => set.add(id));
+  lastRenderedIds.set(listEl, set);
+}
+
+function sendStatusIconHtml(status, isLast) {
+  if (status === "sending") {
+    return `<span class="chat-receipt sending${isLast ? " is-last" : ""}" title="Sending" aria-label="Sending">
+      <span class="chat-send-spinner"></span>
+    </span>`;
+  }
+  return receiptIconHtml(false, isLast);
+}
+
+function renderChatBubbles(listEl, docs, { emptyText, showNames = true, showAvatar = true, seenUpToMs = null }) {
   if (!docs.length) {
     listEl.innerHTML = `<div class="chat-empty">${escapeHtml(emptyText)}</div>`;
+    lastRenderedIds.set(listEl, new Set());
     return;
   }
   const myUid = auth.currentUser?.uid;
+  const prevIds = lastRenderedIds.get(listEl) || new Set();
+  const nextIds = new Set();
   let html = "";
   let lastDayKey = null;
   let prevSenderUid = null;
@@ -168,23 +188,27 @@ function renderChatBubbles(listEl, docs, { emptyText, showNames = true, seenUpTo
 
     const profile = authorProfile(uid, m.authorName);
     const timeLabel = new Date(ms).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-    const canDelete = mine; 
-    const showReceipt = mine && seenUpToMs != null;
+    const pending = !!m.pending;
+    const canDelete = mine && !pending; 
+    const showReceipt = mine && (pending || seenUpToMs != null);
     const isLastMine = mine && idx === docs.length - 1;
-    const seen = showReceipt && ms <= seenUpToMs;
+    const seen = !pending && showReceipt && ms <= seenUpToMs;
+    const isNew = !prevIds.has(m.id);
+    nextIds.add(m.id);
     messageTextCache.set(m.id, m.text || "");
     html += `
-      <div class="chat-bubble-row ${mine ? "mine" : ""}" data-msg-id="${escapeAttr(m.id)}" data-can-delete="${canDelete ? "1" : "0"}">
-        ${grouped ? `<span style="width:26px" aria-hidden="true"></span>` : `<span class="avatar" data-author="${escapeAttr(uid || "")}">${avatarInner(profile)}</span>`}
+      <div class="chat-bubble-row ${mine ? "mine" : ""}${isNew ? " msg-enter" : ""}" data-msg-id="${escapeAttr(m.id)}" data-can-delete="${canDelete ? "1" : "0"}">
+        ${showAvatar ? (grouped ? `<span style="width:26px" aria-hidden="true"></span>` : `<span class="avatar" data-author="${escapeAttr(uid || "")}">${avatarInner(profile)}</span>`) : ""}
         <div class="chat-bubble-group">
           ${!mine && !grouped && showNames ? `<span class="chat-bubble-name">${nameWithBadge(profile.name || "Classmate", profile.email, uid)}</span>` : ""}
           <div class="chat-bubble">${richTextHtml(m.text || "", [])}</div>
-          <div class="chat-bubble-meta"><span>${timeLabel}</span>${showReceipt ? receiptIconHtml(seen, isLastMine) : ""}</div>
+          <div class="chat-bubble-meta"><span>${timeLabel}</span>${showReceipt ? (pending ? sendStatusIconHtml(m.sendStatus, isLastMine) : receiptIconHtml(seen, isLastMine)) : ""}</div>
         </div>
       </div>`;
   });
 
   listEl.innerHTML = html;
+  lastRenderedIds.set(listEl, nextIds);
   wireRichTextClicks(listEl);
   wireMessageLongPress(listEl);
 }
@@ -206,11 +230,13 @@ function wireMessageLongPress(listEl) {
 
     let pressTimer = null;
     let startX = 0, startY = 0;
+    let longPressFired = false;
 
     const cancelPress = () => clearTimeout(pressTimer);
     const startPress = (e) => {
       startX = e.clientX; startY = e.clientY;
-      pressTimer = setTimeout(() => openMessageActionMenu(row), LONG_PRESS_MS);
+      longPressFired = false;
+      pressTimer = setTimeout(() => { longPressFired = true; openMessageActionMenu(row); }, LONG_PRESS_MS);
     };
     const trackMove = (e) => {
       if (Math.abs(e.clientX - startX) > LONG_PRESS_MOVE_TOLERANCE || Math.abs(e.clientY - startY) > LONG_PRESS_MOVE_TOLERANCE) {
@@ -224,6 +250,12 @@ function wireMessageLongPress(listEl) {
     bubble.addEventListener("pointercancel", cancelPress);
     bubble.addEventListener("pointermove", trackMove);
     bubble.addEventListener("contextmenu", (e) => e.preventDefault());
+    bubble.addEventListener("click", () => {
+      if (longPressFired) { longPressFired = false; return; }
+      const wasOpen = row.classList.contains("meta-open");
+      listEl.querySelectorAll(".chat-bubble-row.meta-open").forEach(r => r.classList.remove("meta-open"));
+      if (!wasOpen) row.classList.add("meta-open");
+    });
   });
 }
 
@@ -371,6 +403,7 @@ async function submitClassChat() {
   const text = classChatInput.value.trim();
   if (!text || classChatSendBtn.disabled) return;
   classChatInput.value = "";
+  classChatInput.focus({ preventScroll: true });
   classChatSendBtn.disabled = true;
   classChatAtBottom = true; 
   try {
@@ -551,6 +584,52 @@ let unsubscribeDmConversation = null;
 let dmThreadAtBottom = true;
 const dmMessageCache = new Map();
 const dmReadCache = new Map();
+let dmPendingSends = [];
+
+function reconcilePendingWithMessages(conversationId, msgs) {
+  const myUid = auth.currentUser?.uid;
+  const usedRealIds = new Set();
+  const matchedRealIds = [];
+  dmPendingSends = dmPendingSends.filter((p) => {
+    if (p.conversationId !== conversationId) return true;
+    if (p.realId && msgs.some(m => m.id === p.realId)) { matchedRealIds.push(p.realId); return false; }
+    const match = msgs.find(m =>
+      !usedRealIds.has(m.id) && m.senderUid === myUid && m.text === p.text &&
+      (m.createdAt?.toMillis?.() || 0) >= p.ts - 5000
+    );
+    if (match) { usedRealIds.add(match.id); matchedRealIds.push(match.id); return false; }
+    return true;
+  });
+  if (matchedRealIds.length) markIdsAsSeen(dmThreadListEl, matchedRealIds);
+}
+
+function currentDmDisplayMessages(conversationId) {
+  const myUid = auth.currentUser?.uid;
+  const real = dmMessageCache.get(conversationId) || [];
+  const pending = dmPendingSends
+    .filter(p => p.conversationId === conversationId)
+    .map(p => ({
+      id: p.clientId,
+      senderUid: myUid,
+      text: p.text,
+      createdAt: { toDate: () => new Date(p.ts) },
+      pending: true,
+      sendStatus: p.status
+    }));
+  return [...real, ...pending];
+}
+
+function renderDmThreadFromState(conversationId = currentDmConversationId, { stickToBottom = false } = {}) {
+  if (!dmThreadListEl || !conversationId) return;
+  const msgs = currentDmDisplayMessages(conversationId);
+  const wasNearBottom = stickToBottom || dmThreadAtBottom || dmThreadListEl.dataset.everLoaded !== "1";
+  dmThreadListEl.dataset.conversationId = conversationId;
+  dmThreadListEl.dataset.deleteHandler = "dm";
+  renderChatBubbles(dmThreadListEl, msgs, { emptyText: "No messages yet — say hello 👋", showNames: false, showAvatar: false, seenUpToMs: dmOtherReadAtMs });
+  dmThreadListEl.dataset.everLoaded = "1";
+  if (wasNearBottom) dmThreadListEl.scrollTop = dmThreadListEl.scrollHeight;
+}
+
 export function getOpenDmUid() { return currentDmUid; }
 
 export function isDmThreadOpenWith(otherUid) {
@@ -664,11 +743,7 @@ export async function openDmThread(uid, { fromPopstate = false, replace = false 
 
   const cachedMsgs = dmMessageCache.get(likelyConversationId);
   if (cachedMsgs) {
-    dmThreadListEl.dataset.conversationId = likelyConversationId;
-    dmThreadListEl.dataset.deleteHandler = "dm";
-    renderChatBubbles(dmThreadListEl, cachedMsgs, { emptyText: "No messages yet — say hello 👋", showNames: false, seenUpToMs: dmOtherReadAtMs });
-    dmThreadListEl.dataset.everLoaded = "1";
-    dmThreadListEl.scrollTop = dmThreadListEl.scrollHeight;
+    renderDmThreadFromState(likelyConversationId, { stickToBottom: true });
   } else {
     dmThreadListEl.innerHTML = dmThreadSkeletonHtml();
     dmThreadListEl.dataset.everLoaded = "0";
@@ -705,8 +780,7 @@ export async function openDmThread(uid, { fromPopstate = false, replace = false 
     const otherTypingMs = data.typing?.[uid]?.toMillis?.() || 0;
     dmOtherTypingUntilMs = otherTypingMs ? otherTypingMs + DM_TYPING_STALE_MS : 0;
     paintDmTypingIndicator();
-    const cached = dmMessageCache.get(conversationId);
-    if (cached) renderChatBubbles(dmThreadListEl, cached, { emptyText: "No messages yet — say hello 👋", showNames: false, seenUpToMs: dmOtherReadAtMs });
+    if (dmMessageCache.get(conversationId)) renderDmThreadFromState(conversationId);
   });
 
   const q = query(collection(db, "conversations", conversationId, "messages"), orderBy("createdAt", "asc"));
@@ -715,11 +789,8 @@ export async function openDmThread(uid, { fromPopstate = false, replace = false 
     const wasNearBottom = dmThreadAtBottom || dmThreadListEl.dataset.everLoaded !== "1";
     const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     dmMessageCache.set(conversationId, msgs);
-    dmThreadListEl.dataset.conversationId = conversationId;
-    dmThreadListEl.dataset.deleteHandler = "dm";
-    renderChatBubbles(dmThreadListEl, msgs, { emptyText: "No messages yet — say hello 👋", showNames: false, seenUpToMs: dmOtherReadAtMs });
-    dmThreadListEl.dataset.everLoaded = "1";
-    if (wasNearBottom) dmThreadListEl.scrollTop = dmThreadListEl.scrollHeight;
+    reconcilePendingWithMessages(conversationId, msgs);
+    renderDmThreadFromState(conversationId, { stickToBottom: wasNearBottom });
     markConversationRead(conversationId);
   }, (err) => {
     const { message, technical } = friendlyError(err, "Couldn't load this conversation.");
@@ -741,12 +812,26 @@ async function submitDmMessage() {
   if (!text || !conversationId || !otherUid || dmThreadSendBtn.disabled) return;
   if (dmThreadForm?.classList.contains("hidden")) return; 
   dmThreadInput.value = "";
+  dmThreadInput.focus({ preventScroll: true });
   dmThreadSendBtn.disabled = true;
   dmThreadAtBottom = true;
   clearMyTypingSignal(conversationId);
+
+  const clientId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  dmPendingSends.push({ clientId, conversationId, text, ts: Date.now(), status: "sending" });
+  renderDmThreadFromState(conversationId, { stickToBottom: true });
+
   try {
-    await callApi("send-dm-message", { targetUid: otherUid, text });
+    const { messageId } = await callApi("send-dm-message", { targetUid: otherUid, text });
+    const pending = dmPendingSends.find(p => p.clientId === clientId);
+    if (pending) {
+      pending.status = "sent";
+      pending.realId = messageId;
+      renderDmThreadFromState(conversationId);
+    }
   } catch (err) {
+    dmPendingSends = dmPendingSends.filter(p => p.clientId !== clientId);
+    renderDmThreadFromState(conversationId);
     dmThreadInput.value = text;
     const { message, technical } = friendlyError(err, "Couldn't send that message.");
     showToast(message, { details: technical });
