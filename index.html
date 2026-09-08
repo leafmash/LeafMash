@@ -690,7 +690,7 @@
   @media (min-width:900px) { .chat-bubble-row { max-width:440px; } }
   .chat-bubble-row.mine { @apply self-end flex-row-reverse; }
   .chat-bubble-row .avatar { width:26px; height:26px; box-shadow:none; }
-  .chat-bubble-group { @apply flex flex-col gap-0.5 min-w-0; }
+  .chat-bubble-group { @apply relative flex flex-col gap-0.5 min-w-0; }
   .chat-bubble-row.mine .chat-bubble-group { @apply items-end; }
   .chat-bubble-name { @apply text-[.7rem] font-extrabold pl-1; color: var(--color-forest-700); }
   .chat-bubble {
@@ -705,22 +705,29 @@
     box-shadow: 0 4px 14px rgba(26,76,48,.24);
   }
   .chat-bubble:active { transform:scale(.97); }
-  .chat-bubble-meta {
-    @apply flex items-center gap-1.5 px-1 text-[.65rem] font-semibold overflow-hidden; color: var(--color-ink-faint);
-    max-height:0; opacity:0; margin-top:0; transform:translateY(-3px);
-    transition: max-height .3s cubic-bezier(.4,0,.2,1), opacity .2s ease, margin-top .3s cubic-bezier(.4,0,.2,1), transform .3s cubic-bezier(.4,0,.2,1);
+  .chat-bubble-text { white-space:pre-wrap; }
+  .chat-bubble-inline-meta {
+    @apply inline-flex items-center shrink-0; float:right; margin:3px 0 -2px 8px;
+    line-height:1;
   }
-  .chat-bubble-row.meta-open .chat-bubble-meta { max-height:20px; opacity:1; margin-top:3px; transform:translateY(0); }
-  .chat-bubble-row.mine .chat-bubble-meta { @apply flex-row-reverse; }
   .chat-receipt { @apply inline-flex items-center shrink-0; color: var(--color-ink-faint); transition: color .25s ease; animation: chat-receipt-pop .22s ease; }
   .chat-receipt.seen { color: var(--color-forest-600); }
   .chat-receipt svg { display:block; }
+  .chat-bubble-row.mine .chat-receipt { color: rgba(255,255,255,.72); }
+  .chat-bubble-row.mine .chat-receipt.seen { color:#fff; }
   .chat-send-spinner {
     width:10px; height:10px; border-radius:50%; display:inline-block;
     border:1.6px solid color-mix(in srgb, currentColor 28%, transparent);
     border-top-color: currentColor;
     animation: chat-send-spin .65s linear infinite;
   }
+  .chat-bubble-meta {
+    @apply absolute left-0 right-0 flex items-center px-1 text-[.62rem] font-semibold; color: var(--color-ink-faint);
+    bottom:-15px; opacity:0; pointer-events:none; transform:translateY(-3px); z-index:2; white-space:nowrap;
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  .chat-bubble-row.mine .chat-bubble-meta { @apply justify-end; }
+  .chat-bubble-row.meta-open .chat-bubble-meta { opacity:1; transform:translateY(0); }
   @keyframes chat-send-spin { to { transform: rotate(360deg); } }
   @keyframes chat-receipt-pop { from { opacity:0; transform:scale(.4); } to { opacity:1; transform:scale(1); } }
   .chat-bubble-row.msg-enter { animation: chat-bubble-enter .34s cubic-bezier(.34,1.4,.64,1) both; }
