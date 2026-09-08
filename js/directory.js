@@ -120,42 +120,53 @@ function renderDirectory() {
     return;
   }
 
-  directoryList.innerHTML = `<div class="flat-list">` + filtered.map(s => `
-    <div class="directory-row" data-uid="${escapeHtml(s.uid || "")}">
-      <span class="avatar-presence-wrap">
-        <div class="avatar">${avatarInner(s)}</div>
-        ${avatarPresenceDotHtml(s.uid, { label: true })}
-      </span>
-      <div class="directory-info">
-        <strong>${nameWithBadge(s.name || "Unnamed", s.email, s.uid)}</strong>
-        <div class="directory-sub">
-          <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M4 17V7l8-4 8 4v10l-8 4-8-4z"/></svg>
-          ${escapeHtml(s.roll || "—")}${s.year ? " · " + escapeHtml(s.year) : (s.session ? " · " + escapeHtml(s.session) : "")}
+  directoryList.innerHTML = `<div class="flat-list">` + filtered.map(s => {
+    const firstName = escapeAttr((s.name || "").split(" ")[0] || "");
+    const isSelf = s.uid && s.uid === auth.currentUser?.uid;
+    const yearOrSession = s.year || s.session || "";
+    return `
+    <div class="classmate-card" data-uid="${escapeHtml(s.uid || "")}">
+      <div class="classmate-card-top">
+        <span class="avatar-presence-wrap">
+          <div class="avatar">${avatarInner(s)}</div>
+          ${avatarPresenceDotHtml(s.uid, { label: true })}
+        </span>
+        <div class="classmate-info">
+          <strong>${nameWithBadge(s.name || "Unnamed", s.email, s.uid)}</strong>
+          <div class="classmate-sub">
+            <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M4 17V7l8-4 8 4v10l-8 4-8-4z"/></svg>
+            <span>${escapeHtml(s.roll || "—")}${yearOrSession ? " · " + escapeHtml(yearOrSession) : ""}</span>
+          </div>
         </div>
+        <span class="classmate-blood">${escapeHtml(s.bloodGroup || "—")}</span>
       </div>
-      <span class="blood-badge">${escapeHtml(s.bloodGroup || "—")}</span>
-      ${s.uid && s.uid !== auth.currentUser?.uid
-        ? `<button type="button" class="msg-btn" data-no-row-click data-msg-uid="${escapeAttr(s.uid)}" title="Message ${escapeAttr((s.name||"").split(" ")[0]||"")}">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H8l-4.5 4V6.5a1 1 0 0 1 1-1z"/></svg>
-          </button>`
-        : ""}
-      ${s.hidePhone || !s.phone
-        ? `<span class="call-btn call-btn-disabled" title="${s.phone ? "Number hidden" : "No number on file"}">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
-          </span>`
-        : `<a class="call-btn" href="tel:${escapeAttr(s.phone)}" data-no-row-click title="Call ${escapeAttr((s.name||"").split(" ")[0]||"")}">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/></svg>
-          </a>`}
+      <div class="classmate-actions">
+        ${isSelf ? "" : `
+        <button type="button" class="classmate-action-btn" data-no-row-click data-msg-uid="${escapeAttr(s.uid)}" title="Message ${firstName}">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H8l-4.5 4V6.5a1 1 0 0 1 1-1z"/></svg>
+          Message
+        </button>`}
+        ${s.hidePhone || !s.phone
+          ? `<span class="classmate-action-btn is-disabled" title="${s.phone ? "Number hidden" : "No number on file"}">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+              ${s.phone ? "Hidden" : "No number"}
+            </span>`
+          : `<a class="classmate-action-btn call-variant" href="tel:${escapeAttr(s.phone)}" data-no-row-click title="Call ${firstName}">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/></svg>
+              Call
+            </a>`}
+      </div>
     </div>
-  `).join("") + `</div>`;
+  `;
+  }).join("") + `</div>`;
 
-  directoryList.querySelectorAll(".directory-row").forEach(row => {
+  directoryList.querySelectorAll(".classmate-card").forEach(row => {
     row.addEventListener("click", (e) => {
       if (e.target.closest("[data-no-row-click]")) return;
       openUserProfilePage(row.dataset.uid);
     });
   });
-  directoryList.querySelectorAll(".msg-btn[data-msg-uid]").forEach(btn => {
+  directoryList.querySelectorAll(".classmate-action-btn[data-msg-uid]").forEach(btn => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       openDmThread(btn.dataset.msgUid);

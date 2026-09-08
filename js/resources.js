@@ -189,21 +189,23 @@ function renderResourceRows(resources, listEl, emptyMessage, { savedView = false
     const openCountLabel = r.sourceType === "upload" ? "download" : "view";
     return `
     <div class="resource-row" data-res-id="${r.id}">
-      <div class="resource-row-icon">${fileGlyph(r)}</div>
-      <div class="resource-row-info">
+      <div class="resource-row-top">
+        <div class="resource-row-icon">${fileGlyph(r)}</div>
         <span class="res-cat">${escapeHtml(r.category)}</span>
-        <h4>${escapeHtml(r.title)}</h4>
-        <div class="res-meta">${metaLine}${openCount > 0 ? ` · <span class="res-open-count" title="${openCount} ${openCountLabel}${openCount === 1 ? "" : "s"}">${openCount} ${openCountLabel}${openCount === 1 ? "" : "s"}</span>` : ""}</div>
+        <div class="resource-row-top-actions">
+          ${bookmarkBtnHtml(r.id, saved)}
+          ${!savedView && r.contributorUid === uid ? kebabMenuHtml(r.id, [
+            { action: "edit", label: "Edit" },
+            { action: "delete", label: "Delete", danger: true }
+          ]) : ""}
+        </div>
       </div>
-      ${bookmarkBtnHtml(r.id, saved)}
+      <h4 class="resource-row-title">${escapeHtml(r.title)}</h4>
+      <div class="res-meta">${metaLine}${openCount > 0 ? ` · <span class="res-open-count" title="${openCount} ${openCountLabel}${openCount === 1 ? "" : "s"}">${openCount} ${openCountLabel}${openCount === 1 ? "" : "s"}</span>` : ""}</div>
       <a class="res-link" href="${escapeAttr(r.link)}" target="_blank" rel="noopener" data-res-open-id="${r.id}">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
         <span>${r.sourceType === "upload" ? "Download" : "Open"}</span>
       </a>
-      ${!savedView && r.contributorUid === uid ? kebabMenuHtml(r.id, [
-        { action: "edit", label: "Edit" },
-        { action: "delete", label: "Delete", danger: true }
-      ]) : ""}
     </div>
   `;
   }).join("") + `</div>`;

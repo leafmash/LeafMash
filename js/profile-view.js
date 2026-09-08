@@ -114,7 +114,7 @@ function renderProfilePage(profile, uid) {
       <div class="profile-stat-row">
         <div class="profile-stat-chip"><strong>${escapeHtml(profile.roll || "—")}</strong><span>Roll No.</span></div>
         <div class="profile-stat-chip"><strong>${escapeHtml(profile.bloodGroup || "—")}</strong><span>Blood Grp</span></div>
-        <div class="profile-stat-chip"><strong>${escapeHtml(profile.year || profile.session || "—")}</strong><span>Year</span></div>
+        <div class="profile-stat-chip"><strong class="${(profile.year || profile.session || "").length > 9 ? "stat-value-long" : ""}" title="${escapeAttr(profile.year || profile.session || "")}">${escapeHtml(profile.year || profile.session || "—")}</strong><span>Year</span></div>
       </div>
 
       <div class="profile-action-row">
