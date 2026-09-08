@@ -68,6 +68,7 @@ export async function updateProfile(req, res) {
       if (body.hometown !== undefined) updates.hometown = hometown;
       if (body.address !== undefined) updates.address = address;
       if (body.socialLinks !== undefined) updates.socialLinks = socialLinks;
+      if (body.bio !== undefined) updates.bio = bio;
       if (gender) updates.gender = gender;
       if (photoURL) updates.photoURL = photoURL;
 
