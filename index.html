@@ -898,7 +898,9 @@
   }
 
   .post-head { @apply flex items-center gap-2.5 mb-2.5; }
-  .post-head .kebab-menu { @apply ml-auto -mr-1.5; }
+  .post-head-actions { @apply flex items-center gap-1 ml-auto shrink-0; }
+  .post-head-actions .kebab-menu { @apply ml-0 -mr-1.5; }
+  .post-bookmark-btn { @apply shrink-0; }
   .comment-item .kebab-menu { position:absolute; top:5px; right:5px; margin:0; z-index:5; }
   .comment-item .kebab-btn { width:24px; height:24px; opacity:.5; background: rgba(0,0,0,.04); }
   .comment-item .kebab-btn:active { opacity:1; background: var(--color-surface); }
