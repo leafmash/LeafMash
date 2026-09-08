@@ -87,27 +87,26 @@ export async function sendDmMessage(req, res) {
         participants: [uid, otherUid],
         createdAt: FieldValue.serverTimestamp(),
         blockedBy: [],
-        deletedFor: {},
-        unread: { [uid]: 0, [otherUid]: 0 }
+        deletedFor: {}
       }, { merge: true });
     } else if (convSnap.get(`deletedFor.${uid}`) || convSnap.get(`deletedFor.${otherUid}`)) {
       await convRef.update({ [`deletedFor.${uid}`]: FieldValue.delete(), [`deletedFor.${otherUid}`]: FieldValue.delete() });
     }
 
-    const msgRef = await convRef.collection("messages").add({
+    const msgRef = convRef.collection("messages").doc();
+    const batch = db.batch();
+    batch.set(msgRef, {
       senderUid: uid,
       text,
       createdAt: FieldValue.serverTimestamp()
     });
-
-    await convRef.update({
+    batch.update(convRef, {
       lastMessageText: text.length > 140 ? text.slice(0, 140) + "…" : text,
       lastMessageAt: FieldValue.serverTimestamp(),
       lastSenderUid: uid,
-      [`unread.${otherUid}`]: FieldValue.increment(1),
-      [`unread.${uid}`]: 0,
       [`lastReadAt.${uid}`]: FieldValue.serverTimestamp()
     });
+    await batch.commit();
 
     const senderName = meSnap.get("name") || "";
     const senderPhotoURL = meSnap.get("photoURL") || "";
