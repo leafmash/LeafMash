@@ -9,7 +9,7 @@ import {
 import { initWall, teardownWall, refreshWall } from "./wall.js";
 import { initPullToRefresh } from "./pull-to-refresh.js";
 import { initWriteQueueSync } from "./write-queue.js";
-import { initResources, teardownResources, loadUserResources } from "./resources.js";
+import { initResources, teardownResources, loadUserResources, renderProfileSavedList } from "./resources.js";
 import { initDirectory, teardownDirectory } from "./directory.js";
 import { initRoutine, teardownRoutine, registerNotificationsRouter } from "./routine.js";
 import { renderAdminVerifiedPage } from "./admin-verified.js";
@@ -565,6 +565,7 @@ function renderProfile() {
         <button type="button" class="profile-tab-btn active" data-tab="info" role="tab" id="own-profile-tab-info" aria-selected="true" aria-controls="own-profile-panel-info">Info</button>
         <button type="button" class="profile-tab-btn" data-tab="posts" role="tab" id="own-profile-tab-posts" aria-selected="false" aria-controls="own-profile-panel-posts" tabindex="-1">Posts</button>
         <button type="button" class="profile-tab-btn" data-tab="notes" role="tab" id="own-profile-tab-notes" aria-selected="false" aria-controls="own-profile-panel-notes" tabindex="-1">Notes</button>
+        <button type="button" class="profile-tab-btn" data-tab="saved" role="tab" id="own-profile-tab-saved" aria-selected="false" aria-controls="own-profile-panel-saved" tabindex="-1">Saved</button>
       </div>
 
       <div class="profile-tab-panel active" data-tab-panel="info" role="tabpanel" id="own-profile-panel-info" aria-labelledby="own-profile-tab-info">
@@ -579,6 +580,10 @@ function renderProfile() {
 
       <div class="profile-tab-panel" data-tab-panel="notes" role="tabpanel" id="own-profile-panel-notes" aria-labelledby="own-profile-tab-notes">
         <div id="own-profile-notes-list"><div class="skeleton-row" aria-hidden="true"><div class="skeleton-avatar"></div><div class="skeleton-head-lines"><div class="skeleton-line sk-70"></div><div class="skeleton-line sk-40"></div></div></div><div class="skeleton-row" aria-hidden="true"><div class="skeleton-avatar"></div><div class="skeleton-head-lines"><div class="skeleton-line sk-70"></div><div class="skeleton-line sk-40"></div></div></div></div>
+      </div>
+
+      <div class="profile-tab-panel" data-tab-panel="saved" role="tabpanel" id="own-profile-panel-saved" aria-labelledby="own-profile-tab-saved">
+        <div id="own-profile-saved-list"><div class="skeleton-row" aria-hidden="true"><div class="skeleton-avatar"></div><div class="skeleton-head-lines"><div class="skeleton-line sk-70"></div><div class="skeleton-line sk-40"></div></div></div><div class="skeleton-row" aria-hidden="true"><div class="skeleton-avatar"></div><div class="skeleton-head-lines"><div class="skeleton-line sk-70"></div><div class="skeleton-line sk-40"></div></div></div></div>
       </div>
     </div>
   `;
@@ -606,6 +611,9 @@ function renderProfile() {
       if (btn.dataset.tab === "notes" && !ownNotesLoaded) {
         ownNotesLoaded = true;
         loadUserResources(p.uid, document.getElementById("own-profile-notes-list"));
+      }
+      if (btn.dataset.tab === "saved") {
+        renderProfileSavedList(document.getElementById("own-profile-saved-list"));
       }
     });
   });

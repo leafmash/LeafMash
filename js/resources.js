@@ -64,9 +64,22 @@ function subscribeBookmarks() {
     savedResources = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     savedResourceIds = new Set(savedResources.map(r => r.id));
     renderResources();
+    renderProfileSavedListInner();
   }, (err) => {
     console.warn("Couldn't load saved resources:", err.message);
   });
+}
+
+let profileSavedListEl = null;
+
+export function renderProfileSavedList(listEl) {
+  profileSavedListEl = listEl;
+  renderProfileSavedListInner();
+}
+
+function renderProfileSavedListInner() {
+  if (!profileSavedListEl) return;
+  renderResourceRows(savedResources, profileSavedListEl, "No saved notes yet — tap the bookmark icon on any resource to save it for later.", { savedView: true });
 }
 
 async function toggleBookmark(resId, alreadySaved) {
@@ -415,6 +428,7 @@ export function teardownResources() {
   if (unsubscribeBookmarks) { unsubscribeBookmarks(); unsubscribeBookmarks = null; }
   savedResources = [];
   savedResourceIds = new Set();
+  profileSavedListEl = null;
 }
 
 // ============================================================
