@@ -88,7 +88,7 @@ function renderProfilePage(profile, uid) {
   const socialLinks = normalizedSocialLinks(profile);
   if (socialLinks.length) rows.push(["Social", socialLinksRowHtml(socialLinks)]);
   rows.push(["Email", profile.hideEmail ? `<span class="hidden-field-tag">Hidden</span>` : escapeHtml(profile.email || "—")]);
-  rows.push(["Phone", (profile.hidePhone || !profile.phone) ? `<span class="hidden-field-tag">${profile.phone ? "Hidden" : "Not set"}</span>` : escapeHtml(profile.phone)]);
+  if (profile.phone || profile.hidePhone) rows.push(["Phone", profile.hidePhone ? `<span class="hidden-field-tag">Hidden</span>` : escapeHtml(profile.phone)]);
   rows.push(["College", escapeHtml(COLLEGE_NAME)]);
   const joined = fullDate(profile.createdAt);
   if (joined) rows.push(["Joined LeafMash", joined]);
@@ -122,14 +122,14 @@ function renderProfilePage(profile, uid) {
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H8l-4.5 4V6.5a1 1 0 0 1 1-1z"/></svg>
           Message
         </button>
-        ${profile.phone ? (profile.hidePhone ? `
+        ${profile.hidePhone ? `
         <button type="button" class="profile-action-icon-btn is-locked" id="user-profile-call-locked-btn" aria-label="Call number hidden">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           <svg class="profile-action-icon-btn-lock" viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M12 2a4 4 0 0 0-4 4v2H7a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1h-1V6a4 4 0 0 0-4-4zm0 2a2 2 0 0 1 2 2v2h-4V6a2 2 0 0 1 2-2z"/></svg>
-        </button>` : `
+        </button>` : (profile.phone ? `
         <a class="profile-action-icon-btn" href="tel:${escapeAttr(profile.phone)}" aria-label="Call ${escapeAttr((profile.name || "").split(" ")[0] || "")}">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-        </a>`) : ""}
+        </a>` : "")}
         <div class="kebab-menu profile-more-menu" id="user-profile-more-menu">
           <button type="button" class="kebab-btn" aria-label="More options" aria-haspopup="true">
             <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>

@@ -124,6 +124,10 @@ function renderDirectory() {
     const firstName = escapeAttr((s.name || "").split(" ")[0] || "");
     const isSelf = s.uid && s.uid === auth.currentUser?.uid;
     const yearOrSession = s.year || s.session || "";
+    const showMessage = !isSelf;
+    const showHiddenCall = !!s.hidePhone;
+    const showCall = !!(s.phone && !s.hidePhone);
+    const showActions = showMessage || showHiddenCall || showCall;
     return `
     <div class="classmate-card" data-uid="${escapeHtml(s.uid || "")}">
       <div class="classmate-card-top">
@@ -140,22 +144,24 @@ function renderDirectory() {
         </div>
         <span class="classmate-blood">${escapeHtml(s.bloodGroup || "—")}</span>
       </div>
+      ${showActions ? `
       <div class="classmate-actions">
-        ${isSelf ? "" : `
+        ${showMessage ? `
         <button type="button" class="classmate-action-btn" data-no-row-click data-msg-uid="${escapeAttr(s.uid)}" title="Message ${firstName}">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H8l-4.5 4V6.5a1 1 0 0 1 1-1z"/></svg>
           Message
-        </button>`}
-        ${s.hidePhone || !s.phone
-          ? `<span class="classmate-action-btn is-disabled" title="${s.phone ? "Number hidden" : "No number on file"}">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
-              ${s.phone ? "Hidden" : "No number"}
-            </span>`
-          : `<a class="classmate-action-btn call-variant" href="tel:${escapeAttr(s.phone)}" data-no-row-click title="Call ${firstName}">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/></svg>
-              Call
-            </a>`}
-      </div>
+        </button>` : ""}
+        ${showHiddenCall ? `
+        <span class="classmate-action-btn is-disabled" title="Number hidden">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+          Hidden
+        </span>` : ""}
+        ${showCall ? `
+        <a class="classmate-action-btn call-variant" href="tel:${escapeAttr(s.phone)}" data-no-row-click title="Call ${firstName}">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/></svg>
+          Call
+        </a>` : ""}
+      </div>` : ""}
     </div>
   `;
   }).join("") + `</div>`;
