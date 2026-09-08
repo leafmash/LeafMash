@@ -164,7 +164,6 @@
 
 :root[data-theme="dark"] .pd-photo-camera-btn { background: var(--color-forest-600); }
 :root[data-theme="dark"] .pd-photo-camera-btn:active { background: var(--color-forest-800); }
-:root[data-theme="dark"] .call-btn { background: linear-gradient(135deg, var(--color-forest-600), var(--color-forest-800)); }
 
 @keyframes fade-up   { from{ opacity:0; transform:translateY(5px);} to{ opacity:1; transform:translateY(0);} }
 @keyframes sheet-up   { from{ opacity:0; transform:translateY(42px);} to{ opacity:1; transform:translateY(0);} }
@@ -834,12 +833,6 @@
   .dm-thread-presence-chip:empty { display:none; }
   .dm-thread-presence-chip.online-now { color: var(--color-forest-600); }
 
-  .msg-btn {
-    @apply flex items-center justify-center shrink-0 rounded-full transition-transform; width:32px; height:32px;
-    background: var(--color-forest-100); color: var(--color-forest-700);
-  }
-  .msg-btn:active { transform:scale(.9); background: var(--color-forest-200); }
-
   .nav-icon-wrap { @apply relative inline-flex; }
   .nav-icon-badge {
     @apply absolute flex items-center justify-center text-white font-extrabold rounded-full;
@@ -1134,8 +1127,8 @@
   .add-resource-btn-text small { @apply block text-[.72rem] font-semibold opacity-85 mt-0.5; }
 
   .resource-row {
-    @apply relative flex items-center gap-3 bg-surface shadow-[var(--shadow-card)] transition-shadow;
-    padding:14px 15px 13px; margin-top:11px; border:1.5px dashed rgba(156,117,38,.4);
+    @apply relative flex flex-col bg-surface shadow-[var(--shadow-card)] transition-shadow;
+    padding:14px 15px; margin-top:11px; border:1.5px dashed rgba(156,117,38,.4);
     border-radius:4px 16px 16px 16px;
   }
   .resource-row::before {
@@ -1143,19 +1136,19 @@
     background: rgba(156,117,38,.3); transform: rotate(-3deg); box-shadow:0 1px 2px rgba(0,0,0,.08);
   }
   @media (hover:hover) { .resource-row:hover { box-shadow: var(--shadow-cardhover); border-color: rgba(156,117,38,.6); } }
+  .resource-row-top { @apply flex items-center gap-2.5 w-full; }
   .resource-row-icon {
-    @apply w-[44px] h-[44px] rounded-[10px] flex items-center justify-center font-extrabold text-[.92rem] shrink-0 text-white;
+    @apply w-9 h-9 rounded-[10px] flex items-center justify-center font-extrabold text-[.78rem] shrink-0 text-white;
     background: linear-gradient(145deg, var(--color-gold-500), var(--color-gold-600)); box-shadow: var(--shadow-tile);
-    border:2px solid var(--color-surface); transform: rotate(-4deg);
   }
-  .resource-row-info { @apply flex-1 min-w-0; }
-  .resource-row-info h4 { @apply text-[.92rem] font-bold leading-snug break-words; margin:2px 0; }
+  .res-cat { @apply text-[.66rem] font-extrabold uppercase tracking-wide rounded-md; background: var(--color-gold-50); color: var(--color-gold-600); padding:4px 8px; }
+  .resource-row-top-actions { @apply flex items-center gap-1 ml-auto shrink-0; }
+  .resource-row-title { @apply text-[.94rem] font-bold leading-snug break-words; margin:10px 0 3px; }
   .res-meta { @apply text-xs; color: var(--color-ink-faint); }
   .res-open-count { @apply font-bold; color: var(--color-forest-600); }
-  .res-cat { @apply text-[.66rem] font-extrabold uppercase tracking-wide rounded-md; background: var(--color-gold-50); color: var(--color-gold-600); padding:2px 7px; }
   a.res-link {
-    @apply shrink-0 inline-flex items-center gap-1.5 text-[.78rem] font-extrabold text-white rounded-full transition-transform;
-    padding:8px 14px 8px 12px; background: linear-gradient(135deg, var(--color-forest-600), var(--color-forest-800));
+    @apply self-start inline-flex items-center gap-1.5 text-[.78rem] font-extrabold text-white rounded-full transition-transform;
+    padding:8px 14px 8px 12px; margin-top:11px; background: linear-gradient(135deg, var(--color-forest-600), var(--color-forest-800));
     box-shadow: 0 6px 14px rgba(26,76,48,.32), inset 0 1px 0 rgba(255,255,255,.16);
   }
   a.res-link svg { @apply shrink-0; }
@@ -1163,10 +1156,12 @@
 
   .bookmark-toggle-btn {
     @apply flex items-center justify-center rounded-full shrink-0 transition-colors;
-    width:34px; height:34px; color: var(--color-ink-faint); background: var(--color-paper-deep); border:1px solid var(--color-line);
+    width:30px; height:30px; color: var(--color-ink-faint); background: var(--color-paper-deep); border:1px solid var(--color-line);
   }
   .bookmark-toggle-btn.active { color: var(--color-gold-600); background: var(--color-gold-50); border-color: rgba(156,117,38,.3); }
   .bookmark-toggle-btn:active { transform:scale(.9); }
+  .resource-row-top-actions .kebab-menu { @apply ml-0; }
+  .resource-row-top-actions .kebab-btn { width:30px; height:30px; }
 
   .res-source-toggle { @apply flex gap-2 -mt-1; }
   .res-source-btn {
@@ -1243,8 +1238,36 @@
     background: var(--color-danger-100); color: var(--color-danger-600); width:36px; height:36px; font-family: var(--font-mono);
     border:1.5px dashed var(--color-danger-500); transform: rotate(-6deg);
   }
-  .call-btn { @apply w-9 h-9 flex items-center justify-center text-white rounded-full shrink-0; background: linear-gradient(135deg, var(--color-forest-600), var(--color-forest-700)); box-shadow:0 4px 10px rgba(26,76,48,.28); }
-  .call-btn-disabled { @apply text-ink-faint pointer-events-none; background: var(--color-paper-deep); box-shadow:none; color: var(--color-ink-faint); }
+
+  .classmate-card {
+    @apply flex flex-col w-full text-left bg-surface transition-colors rounded-[16px] shadow-[var(--shadow-card)];
+    padding:13px 14px 11px; border:1px solid var(--color-line); cursor:pointer;
+  }
+  @media (hover:hover) { .classmate-card:hover { box-shadow: var(--shadow-cardhover); } }
+  .classmate-card:active { background: var(--color-paper-deep); }
+  .classmate-card-top { @apply flex items-center gap-3 w-full min-w-0; }
+  .classmate-info { @apply flex-1 min-w-0; }
+  .classmate-info strong { @apply block truncate text-[.92rem]; }
+  .classmate-sub {
+    @apply flex items-center gap-1.5 text-[.74rem] mt-1 font-bold min-w-0;
+    color: var(--color-forest-700);
+  }
+  .classmate-sub svg { @apply shrink-0; }
+  .classmate-sub span { @apply flex-1 min-w-0 truncate; }
+  .classmate-blood {
+    @apply flex flex-col items-center justify-center leading-none font-extrabold text-[.7rem] rounded-full shrink-0;
+    background: var(--color-danger-100); color: var(--color-danger-600); width:34px; height:34px; font-family: var(--font-mono);
+    border:1.5px dashed var(--color-danger-500); transform: rotate(-6deg);
+  }
+  .classmate-actions { @apply flex items-stretch gap-2 w-full mt-2.5 pt-2.5; border-top:1px solid var(--color-line); }
+  .classmate-action-btn {
+    @apply flex-1 flex items-center justify-center gap-1.5 text-[.78rem] font-extrabold rounded-full transition-transform;
+    padding:8px 10px; background: var(--color-forest-50); color: var(--color-forest-700);
+  }
+  .classmate-action-btn:active { transform:scale(.96); background: var(--color-forest-100); }
+  .classmate-action-btn.call-variant { background: linear-gradient(135deg, var(--color-forest-600), var(--color-forest-700)); color:#fff; box-shadow:0 4px 10px rgba(26,76,48,.28); }
+  .classmate-action-btn.call-variant:active { transform:scale(.96); }
+  .classmate-action-btn.is-disabled { @apply pointer-events-none; background: var(--color-paper-deep); color: var(--color-ink-faint); box-shadow:none; }
   .likes-list .likes-row { @apply cursor-pointer; }
 
   .notice-flat-list { @apply flex flex-col gap-2.5; }
@@ -1429,10 +1452,14 @@
 
   .profile-stat-row { @apply relative z-[1] flex items-stretch justify-center gap-2 mt-4.5 mb-1; }
   .profile-stat-chip {
-    @apply flex-1 max-w-[130px] flex flex-col items-center justify-center gap-0.5 rounded-2xl bg-surface;
+    @apply flex-1 max-w-[130px] min-w-0 flex flex-col items-center justify-center gap-0.5 rounded-2xl bg-surface;
     padding:10px 6px; box-shadow: var(--shadow-card); border:1px solid var(--color-line);
   }
-  .profile-stat-chip strong { @apply text-[.86rem] font-extrabold; color: var(--color-forest-700); font-family: var(--font-mono); }
+  .profile-stat-chip strong {
+    @apply w-full block text-center text-[.86rem] font-extrabold truncate;
+    color: var(--color-forest-700); font-family: var(--font-mono);
+  }
+  .profile-stat-chip strong.stat-value-long { @apply text-[.66rem] whitespace-normal leading-tight; -webkit-line-clamp:2; display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; }
   .profile-stat-chip span { @apply text-[.62rem] font-bold uppercase tracking-wide; color: var(--color-ink-faint); }
 
   .profile-flow-details {
