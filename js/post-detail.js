@@ -15,7 +15,8 @@ import {
   authorProfile, openEditPostModal, deletePost, wireMentions,
   openReactionsModal, wireReactionControl, paintReactionButton, REACTION_EMOJIS, reactionGlyphHtml, reactionLabel,
   pollHtml, wirePoll, togglePinPost, setCommentCountCache, paintCommentCountBtn,
-  updateStatsRowVisibility, commentCountLabel, wireCommentReactionControl
+  updateStatsRowVisibility, commentCountLabel, wireCommentReactionControl,
+  postBookmarkBtnHtml, wirePostBookmarkBtn
 } from "./wall.js";
 import { openUserProfilePage } from "./profile-view.js";
 import { avatarPresenceDotHtml } from "./presence.js";
@@ -374,7 +375,10 @@ function renderPostDetail(postId, post, comments, container, { focusComment, com
           <button type="button" class="post-author-name" data-author="${post.authorUid}">${nameWithBadge(post.authorName, post.authorEmail, post.authorUid)}</button>
           <small>${post.pinned ? "📌 Pinned · " : ""}${timeAgo(post.createdAt)}${post.editedAt ? " · edited" : ""}</small>
         </div>
-        ${kebabActions.length ? kebabMenuHtml(postId, kebabActions) : ""}
+        <div class="post-head-actions">
+          ${postBookmarkBtnHtml(postId)}
+          ${kebabActions.length ? kebabMenuHtml(postId, kebabActions) : ""}
+        </div>
       </div>
       ${clampableRichHtml(post.text, post.mentions, "post-text")}
       ${postImagesHtml(post.images)}
@@ -442,6 +446,7 @@ function renderPostDetail(postId, post, comments, container, { focusComment, com
   applyPostImageRatios(postEl);
   wirePostImageViewer(postEl);
   wirePoll(postEl, postId, post);
+  wirePostBookmarkBtn(postEl, postId);
   if (kebabActions.length) {
     wireKebabMenus(postEl, {
       edit: () => openEditPostModal(postId, post.text, () => {}, post.images || [], post.mentions || []),

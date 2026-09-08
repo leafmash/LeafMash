@@ -9,7 +9,9 @@ import {
 import { initWall, teardownWall, refreshWall } from "./wall.js";
 import { initPullToRefresh } from "./pull-to-refresh.js";
 import { initWriteQueueSync } from "./write-queue.js";
-import { initResources, teardownResources, loadUserResources, renderProfileSavedList } from "./resources.js";
+import { initResources, teardownResources, loadUserResources } from "./resources.js";
+import { initBookmarks, teardownBookmarks } from "./bookmarks.js";
+import { mountSavedView, unmountSavedView } from "./saved.js";
 import { initDirectory, teardownDirectory } from "./directory.js";
 import { initRoutine, teardownRoutine, registerNotificationsRouter } from "./routine.js";
 import { renderAdminVerifiedPage } from "./admin-verified.js";
@@ -332,6 +334,7 @@ function goToRoute(route, { fromPopstate = false, replace = false, state = {} } 
   if (currentRoute === "post-detail" && route !== "post-detail") teardownPostDetail();
   if (currentRoute === "user-profile" && route !== "user-profile") teardownProfilePage();
   if (currentRoute === "dm-thread" && route !== "dm-thread") teardownDmThread();
+  if (currentRoute === "profile" && route !== "profile") unmountSavedView();
 
   const priorRoute = currentRoute;
   currentRoute = route;
@@ -613,7 +616,7 @@ function renderProfile() {
         loadUserResources(p.uid, document.getElementById("own-profile-notes-list"));
       }
       if (btn.dataset.tab === "saved") {
-        renderProfileSavedList(document.getElementById("own-profile-saved-list"));
+        mountSavedView(document.getElementById("own-profile-saved-list"));
       }
     });
   });
@@ -983,6 +986,7 @@ watchAuthState(
     let wallReady = Promise.resolve(true);
     let directoryReady = Promise.resolve(true);
     if (!featuresInitialized) {
+      initBookmarks();
       wallReady = waitForTrustedSnapshot(initWall);
       directoryReady = waitForTrustedSnapshot(initDirectory);
       initResources();
@@ -1028,6 +1032,7 @@ watchAuthState(
     if (featuresInitialized) {
       teardownWall();
       teardownResources();
+      teardownBookmarks();
       teardownDirectory();
       teardownRoutine();
       teardownDeadlines();

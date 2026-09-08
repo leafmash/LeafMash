@@ -1,6 +1,6 @@
 import { db, auth, RESOURCE_CATEGORIES } from "./firebase-config.js";
 import {
-  collection, updateDoc, deleteDoc, doc, setDoc, query, where, orderBy, limit, getDocs, serverTimestamp, increment
+  collection, updateDoc, deleteDoc, doc, query, where, orderBy, limit, getDocs, increment
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import { onSnapshotWithRetry } from "./realtime-retry.js";
 import { currentProfile } from "./auth.js";
@@ -12,6 +12,9 @@ import { logActivity, deleteActivityForResource } from "./routine.js";
 import { triggerPush } from "./push-trigger.js";
 import { uploadImage, uploadRawFile } from "./cloudinary.js";
 import { callApi } from "./api-client.js";
+import {
+  initBookmarks, addBookmarksListener, getSavedResources, isResourceSaved, toggleResourceBookmark
+} from "./bookmarks.js";
 
 const MAX_RESOURCE_FILE_BYTES = 20 * 1024 * 1024;
 
@@ -39,9 +42,6 @@ let activeCategory = "All";
 let unsubscribeResources = null;
 
 const SAVED_CHIP_KEY = "__saved__";
-let savedResources = [];             
-let savedResourceIds = new Set();    
-let unsubscribeBookmarks = null;
 
 const RESOURCE_PAGE_SIZE = 30;
 let resourcePageLimit = RESOURCE_PAGE_SIZE;
@@ -52,57 +52,14 @@ export function initResources() {
   addBtn.addEventListener("click", openAddResourceModal);
   searchInput?.addEventListener("input", renderResources);
   subscribeResources();
-  subscribeBookmarks();
-}
-
-function subscribeBookmarks() {
-  if (unsubscribeBookmarks) return;
-  const uid = auth.currentUser?.uid;
-  if (!uid) return;
-  const q = query(collection(db, "users", uid, "bookmarks"), orderBy("savedAt", "desc"));
-  unsubscribeBookmarks = onSnapshotWithRetry(q, (snap) => {
-    savedResources = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    savedResourceIds = new Set(savedResources.map(r => r.id));
-    renderResources();
-    renderProfileSavedListInner();
-  }, (err) => {
-    console.warn("Couldn't load saved resources:", err.message);
-  });
-}
-
-let profileSavedListEl = null;
-
-export function renderProfileSavedList(listEl) {
-  profileSavedListEl = listEl;
-  renderProfileSavedListInner();
-}
-
-function renderProfileSavedListInner() {
-  if (!profileSavedListEl) return;
-  renderResourceRows(savedResources, profileSavedListEl, "No saved notes yet — tap the bookmark icon on any resource to save it for later.", { savedView: true });
+  initBookmarks();
+  addBookmarksListener(renderResources);
 }
 
 async function toggleBookmark(resId, alreadySaved) {
-  const uid = auth.currentUser?.uid;
-  if (!uid || !resId) return;
-  const ref = doc(db, "users", uid, "bookmarks", resId);
+  const r = allResources.find(x => x.id === resId) || getSavedResources().find(x => x.id === resId);
   try {
-    if (alreadySaved) {
-      await deleteDoc(ref);
-    } else {
-      const r = allResources.find(x => x.id === resId) || savedResources.find(x => x.id === resId);
-      if (!r) return;
-      await setDoc(ref, {
-        resourceId: resId,
-        title: r.title,
-        category: r.category,
-        link: r.link,
-        sourceType: r.sourceType || null,
-        fileExt: r.fileExt || null,
-        contributorName: r.contributorName || null,
-        savedAt: serverTimestamp()
-      });
-    }
+    await toggleResourceBookmark(resId, alreadySaved, r);
   } catch (err) {
     const { message, technical } = friendlyError(err, "Couldn't update your Saved list.");
     showToast(message, { details: technical });
@@ -155,7 +112,7 @@ function renderResources() {
   const term = (searchInput?.value || "").trim().toLowerCase();
 
   if (activeCategory === SAVED_CHIP_KEY) {
-    const savedFiltered = savedResources.filter(r => matchesResourceSearch(r, term));
+    const savedFiltered = getSavedResources().filter(r => matchesResourceSearch(r, term));
     renderResourceRows(savedFiltered, resourceList, term ? "No saved notes match your search." : "No saved notes yet — tap the bookmark icon on any resource to save it for later.", { savedView: true });
     return;
   }
@@ -185,7 +142,7 @@ function bumpResourceOpenCount(resId) {
   });
 }
 
-function renderResourceRows(resources, listEl, emptyMessage, { savedView = false } = {}) {
+export function renderResourceRows(resources, listEl, emptyMessage, { savedView = false } = {}) {
   if (!listEl) return;
   if (!resources.length) {
     listEl.innerHTML = `<p class="empty-state">${escapeHtml(emptyMessage)}</p>`;
@@ -194,7 +151,7 @@ function renderResourceRows(resources, listEl, emptyMessage, { savedView = false
 
   const uid = auth.currentUser?.uid;
   listEl.innerHTML = `<div class="flat-list">` + resources.map(r => {
-    const saved = savedView ? true : savedResourceIds.has(r.id);
+    const saved = savedView ? true : isResourceSaved(r.id);
     const metaLine = savedView
       ? `${r.contributorName ? "Shared by " + escapeHtml(r.contributorName) + " · " : ""}Saved ${timeAgo(r.savedAt)}`
       : `Shared by ${escapeHtml(r.contributorName)} · ${timeAgo(r.createdAt)}`;
@@ -425,10 +382,6 @@ function openEditResourceModal(resId) {
 
 export function teardownResources() {
   if (unsubscribeResources) unsubscribeResources();
-  if (unsubscribeBookmarks) { unsubscribeBookmarks(); unsubscribeBookmarks = null; }
-  savedResources = [];
-  savedResourceIds = new Set();
-  profileSavedListEl = null;
 }
 
 // ============================================================

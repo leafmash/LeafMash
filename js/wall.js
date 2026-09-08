@@ -21,6 +21,7 @@ import { imagePickerHtml, wireImagePicker, postImagesHtml, applyPostImageRatios 
 import { getAllStudents } from "./directory.js";
 import { onSnapshotWithRetry } from "./realtime-retry.js";
 import { enqueueWrite, registerWriteHandler, isNetworkError } from "./write-queue.js";
+import { isPostSaved, togglePostBookmark } from "./bookmarks.js";
 
 export const REACTION_EMOJIS = ["leaf", "❤️", "😂", "😮", "😢"];
 const DEFAULT_REACTION = "leaf";
@@ -624,6 +625,33 @@ export async function deletePost(postId, onDeleted) {
   onDeleted?.();
 }
 
+export function postBookmarkBtnHtml(postId) {
+  const saved = isPostSaved(postId);
+  return `
+    <button type="button" class="bookmark-toggle-btn post-bookmark-btn ${saved ? "active" : ""}" data-post-id="${postId}" data-saved="${saved ? "1" : "0"}" aria-pressed="${saved}" aria-label="${saved ? "Remove from Saved" : "Save for later"}">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="${saved ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+    </button>`;
+}
+
+export function wirePostBookmarkBtn(root, postId) {
+  const bookmarkBtn = root.querySelector(".post-bookmark-btn");
+  if (!bookmarkBtn) return;
+  bookmarkBtn.addEventListener("click", () => {
+    const alreadySaved = bookmarkBtn.dataset.saved === "1";
+    togglePostBookmark(postId, alreadySaved).then(() => {
+      const nowSaved = !alreadySaved;
+      bookmarkBtn.dataset.saved = nowSaved ? "1" : "0";
+      bookmarkBtn.classList.toggle("active", nowSaved);
+      bookmarkBtn.setAttribute("aria-pressed", String(nowSaved));
+      bookmarkBtn.setAttribute("aria-label", nowSaved ? "Remove from Saved" : "Save for later");
+      bookmarkBtn.querySelector("svg").setAttribute("fill", nowSaved ? "currentColor" : "none");
+    }).catch((err) => {
+      const { message, technical } = friendlyError(err, "Couldn't update your Saved list.");
+      showToast(message, { details: technical });
+    });
+  });
+}
+
 export function renderPost(postId, post, listEl, { onChanged } = {}) {
   const uid = auth.currentUser.uid;
   const reactions = reactionsOf(post);
@@ -653,7 +681,10 @@ export function renderPost(postId, post, listEl, { onChanged } = {}) {
         <button type="button" class="post-author-name" data-author="${post.authorUid}">${nameWithBadge(post.authorName, post.authorEmail, post.authorUid)}</button>
         <small>${post.pinned ? "📌 Pinned · " : ""}${timeAgo(post.createdAt)}${post.editedAt ? " · edited" : ""}</small>
       </div>
-      ${kebabMenuHtml(postId, kebabActions)}
+      <div class="post-head-actions">
+        ${postBookmarkBtnHtml(postId)}
+        ${kebabMenuHtml(postId, kebabActions)}
+      </div>
     </div>
     ${clampableRichHtml(post.text, post.mentions, "post-text")}
     ${postImagesHtml(post.images)}
@@ -695,10 +726,11 @@ export function renderPost(postId, post, listEl, { onChanged } = {}) {
     openPostDetailPage(postId, { focusComment: true });
   });
   el.addEventListener("click", async (e) => {
-    if (e.target.closest(".reaction-control, .post-stats, .kebab-menu, [data-author], .comment-toggle-btn, .clamp-toggle, .mention-chip, .hashtag-chip, .poll-block")) return;
+    if (e.target.closest(".reaction-control, .post-stats, .kebab-menu, .post-bookmark-btn, [data-author], .comment-toggle-btn, .clamp-toggle, .mention-chip, .hashtag-chip, .poll-block")) return;
     const { openPostDetailPage } = await import("./post-detail.js");
     openPostDetailPage(postId);
   });
+  wirePostBookmarkBtn(el, postId);
   attachClampToggle(el);
   wireRichTextClicks(el);
   applyPostImageRatios(el);
