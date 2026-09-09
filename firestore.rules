@@ -198,5 +198,10 @@ service cloud.firestore {
     match /pushRateLimits/{uid} {
       allow read, write: if false;
     }
+
+    match /config/appVersion {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

@@ -252,6 +252,25 @@
     transition: opacity .2s ease, transform .2s ease;
   }
 
+  .force-update-overlay {
+    @apply fixed inset-0 z-[700] flex items-center justify-center; padding:24px;
+    background: radial-gradient(130% 150% at 20% 0%, var(--color-forest-600) 0%, var(--color-forest-800) 48%, var(--color-forest-950) 100%);
+  }
+  .force-update-card { @apply w-full text-center flex flex-col items-center gap-3; max-width:360px; }
+  .force-update-icon {
+    @apply w-16 h-16 rounded-full flex items-center justify-center text-white shrink-0; background: rgba(255,255,255,.14);
+  }
+  .force-update-card h2 { @apply text-white text-xl font-extrabold m-0; font-family: var(--font-display); }
+  .force-update-desc { @apply text-white text-sm m-0; opacity:.88; }
+  .force-update-changelog { @apply text-white text-xs m-0 whitespace-pre-wrap; opacity:.7; }
+  .force-update-progress {
+    @apply w-full rounded-full overflow-hidden hidden; height:8px; background: rgba(255,255,255,.18); margin-top:6px;
+  }
+  .force-update-progress.show { @apply block; }
+  .force-update-progress-bar { @apply h-full rounded-full block; width:0%; background: var(--color-gold-500); transition: width .2s ease; }
+  .force-update-status { @apply text-white text-xs m-0; opacity:.85; min-height:16px; }
+  .force-update-card .btn-primary { @apply mt-2 w-full; }
+
   .auth-screen { @apply min-h-screen bg-surface; }
   .auth-split { @apply grid min-h-screen; grid-template-columns: 1fr; }
 
