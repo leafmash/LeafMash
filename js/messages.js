@@ -158,6 +158,72 @@ function sendStatusIconHtml(status, isLast) {
   return receiptIconHtml(false, isLast);
 }
 
+function buildDayDividerEl(key, ms) {
+  const el = document.createElement("div");
+  el.className = "chat-day-divider";
+  el.dataset.rowKey = key;
+  el.textContent = new Date(ms).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  return el;
+}
+
+function bubbleMetaHtml(ctx) {
+  const { showReceipt, pending, m, seen, isLastMine } = ctx;
+  if (!showReceipt) return "";
+  return pending ? sendStatusIconHtml(m.sendStatus, isLastMine) : receiptIconHtml(seen, isLastMine);
+}
+
+function buildBubbleRowEl(ctx) {
+  const { m, uid, mine, profile, grouped, showAvatar, showNames, isNew, canDelete, timeLabel } = ctx;
+  const row = document.createElement("div");
+  row.className = `chat-bubble-row${mine ? " mine" : ""}${isNew ? " msg-enter" : ""}`;
+  row.dataset.rowKey = m.id;
+  row.dataset.msgId = m.id;
+  row.dataset.canDelete = canDelete ? "1" : "0";
+  row.innerHTML = `
+    ${showAvatar ? (grouped ? `<span style="width:26px" aria-hidden="true"></span>` : `<span class="avatar" data-author="${escapeAttr(uid || "")}">${avatarInner(profile)}</span>`) : ""}
+    <div class="chat-bubble-group">
+      ${!mine && !grouped && showNames ? `<span class="chat-bubble-name">${nameWithBadge(profile.name || "Classmate", profile.email, uid)}</span>` : ""}
+      <div class="chat-bubble">
+        <span class="chat-bubble-text">${richTextHtml(m.text || "", [])}</span>
+        <span class="chat-bubble-inline-meta">${bubbleMetaHtml(ctx)}</span>
+      </div>
+      <div class="chat-bubble-meta"><span>${timeLabel}</span></div>
+    </div>`;
+  return row;
+}
+
+function applyBubbleMeta(row, ctx) {
+  row.dataset.canDelete = ctx.canDelete ? "1" : "0";
+  const metaSlot = row.querySelector(".chat-bubble-inline-meta");
+  if (metaSlot) metaSlot.innerHTML = bubbleMetaHtml(ctx);
+}
+
+function reconcileChatList(listEl, targetItems) {
+  const existingByKey = new Map();
+  Array.from(listEl.children).forEach((child) => {
+    if (child.dataset.rowKey) existingByKey.set(child.dataset.rowKey, child);
+    else child.remove();
+  });
+
+  let cursor = listEl.firstChild;
+  targetItems.forEach((item) => {
+    let el = existingByKey.get(item.key);
+    if (el) {
+      existingByKey.delete(item.key);
+      if (item.type === "row") applyBubbleMeta(el, item.ctx);
+    } else {
+      el = item.type === "divider" ? buildDayDividerEl(item.key, item.ms) : buildBubbleRowEl(item.ctx);
+    }
+    if (cursor === el) {
+      cursor = cursor.nextSibling;
+    } else {
+      listEl.insertBefore(el, cursor);
+    }
+  });
+
+  existingByKey.forEach((el) => el.remove());
+}
+
 function renderChatBubbles(listEl, docs, { emptyText, showNames = true, showAvatar = true, seenUpToMs = null }) {
   if (!docs.length) {
     listEl.innerHTML = `<div class="chat-empty">${escapeHtml(emptyText)}</div>`;
@@ -167,7 +233,7 @@ function renderChatBubbles(listEl, docs, { emptyText, showNames = true, showAvat
   const myUid = auth.currentUser?.uid;
   const prevIds = lastRenderedIds.get(listEl) || new Set();
   const nextIds = new Set();
-  let html = "";
+  const targetItems = [];
   let lastDayKey = null;
   let prevSenderUid = null;
   let prevMs = 0;
@@ -179,8 +245,8 @@ function renderChatBubbles(listEl, docs, { emptyText, showNames = true, showAvat
     const dayKey = new Date(ms).toDateString();
     if (dayKey !== lastDayKey) {
       lastDayKey = dayKey;
-      html += `<div class="chat-day-divider">${escapeHtml(new Date(ms).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }))}</div>`;
-      prevSenderUid = null; 
+      targetItems.push({ type: "divider", key: `day:${dayKey}`, ms });
+      prevSenderUid = null;
     }
     const grouped = prevSenderUid === uid && (ms - prevMs) < 5 * 60 * 1000;
     prevSenderUid = uid;
@@ -189,28 +255,22 @@ function renderChatBubbles(listEl, docs, { emptyText, showNames = true, showAvat
     const profile = authorProfile(uid, m.authorName);
     const timeLabel = new Date(ms).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
     const pending = !!m.pending;
-    const canDelete = mine && !pending; 
+    const canDelete = mine && !pending;
     const showReceipt = mine && (pending || seenUpToMs != null);
     const isLastMine = mine && idx === docs.length - 1;
     const seen = !pending && showReceipt && ms <= seenUpToMs;
     const isNew = !prevIds.has(m.id);
     nextIds.add(m.id);
     messageTextCache.set(m.id, m.text || "");
-    html += `
-      <div class="chat-bubble-row ${mine ? "mine" : ""}${isNew ? " msg-enter" : ""}" data-msg-id="${escapeAttr(m.id)}" data-can-delete="${canDelete ? "1" : "0"}">
-        ${showAvatar ? (grouped ? `<span style="width:26px" aria-hidden="true"></span>` : `<span class="avatar" data-author="${escapeAttr(uid || "")}">${avatarInner(profile)}</span>`) : ""}
-        <div class="chat-bubble-group">
-          ${!mine && !grouped && showNames ? `<span class="chat-bubble-name">${nameWithBadge(profile.name || "Classmate", profile.email, uid)}</span>` : ""}
-          <div class="chat-bubble">
-            <span class="chat-bubble-text">${richTextHtml(m.text || "", [])}</span>
-            ${showReceipt ? `<span class="chat-bubble-inline-meta">${pending ? sendStatusIconHtml(m.sendStatus, isLastMine) : receiptIconHtml(seen, isLastMine)}</span>` : ""}
-          </div>
-          <div class="chat-bubble-meta"><span>${timeLabel}</span></div>
-        </div>
-      </div>`;
+
+    targetItems.push({
+      type: "row",
+      key: m.id,
+      ctx: { m, uid, mine, profile, grouped, showAvatar, showNames, showReceipt, pending, seen, isLastMine, timeLabel, canDelete, isNew }
+    });
   });
 
-  listEl.innerHTML = html;
+  reconcileChatList(listEl, targetItems);
   lastRenderedIds.set(listEl, nextIds);
   wireRichTextClicks(listEl);
   wireMessageLongPress(listEl);
@@ -405,8 +465,9 @@ function subscribeClassChat() {
 async function submitClassChat() {
   const text = classChatInput.value.trim();
   if (!text || classChatSendBtn.disabled) return;
+  const wasFocused = document.activeElement === classChatInput;
   classChatInput.value = "";
-  classChatInput.focus({ preventScroll: true });
+  if (wasFocused) classChatInput.focus({ preventScroll: true });
   classChatSendBtn.disabled = true;
   classChatAtBottom = true; 
   try {
@@ -594,18 +655,34 @@ const dmMessageCache = new Map();
 const dmReadCache = new Map();
 let dmPendingSends = [];
 
+function relabelPendingRow(clientId, realId) {
+  const row = dmThreadListEl?.querySelector(`.chat-bubble-row[data-row-key="${CSS.escape(clientId)}"]`);
+  if (!row) return;
+  row.dataset.rowKey = realId;
+  row.dataset.msgId = realId;
+}
+
 function reconcilePendingWithMessages(conversationId, msgs) {
   const myUid = auth.currentUser?.uid;
   const usedRealIds = new Set();
   const matchedRealIds = [];
   dmPendingSends = dmPendingSends.filter((p) => {
     if (p.conversationId !== conversationId) return true;
-    if (p.realId && msgs.some(m => m.id === p.realId)) { matchedRealIds.push(p.realId); return false; }
+    if (p.realId && msgs.some(m => m.id === p.realId)) {
+      relabelPendingRow(p.clientId, p.realId);
+      matchedRealIds.push(p.realId);
+      return false;
+    }
     const match = msgs.find(m =>
       !usedRealIds.has(m.id) && m.senderUid === myUid && m.text === p.text &&
       (m.createdAt?.toMillis?.() || 0) >= p.ts - 5000
     );
-    if (match) { usedRealIds.add(match.id); matchedRealIds.push(match.id); return false; }
+    if (match) {
+      usedRealIds.add(match.id);
+      relabelPendingRow(p.clientId, match.id);
+      matchedRealIds.push(match.id);
+      return false;
+    }
     return true;
   });
   if (matchedRealIds.length) markIdsAsSeen(dmThreadListEl, matchedRealIds);
@@ -819,8 +896,9 @@ async function submitDmMessage() {
   const otherUid = currentDmUid;
   if (!text || !conversationId || !otherUid || dmThreadSendBtn.disabled) return;
   if (dmThreadForm?.classList.contains("hidden")) return; 
+  const wasFocused = document.activeElement === dmThreadInput;
   dmThreadInput.value = "";
-  dmThreadInput.focus({ preventScroll: true });
+  if (wasFocused) dmThreadInput.focus({ preventScroll: true });
   dmThreadSendBtn.disabled = true;
   dmThreadAtBottom = true;
   clearMyTypingSignal(conversationId);

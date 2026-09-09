@@ -1,11 +1,14 @@
+import { isAcceptableImageFile } from "./media-picker.js";
+import { showToast } from "./ui-utils.js";
+
 const OUTPUT_SIZE = 640;
 const MIN_ZOOM = 1;   
 const MAX_ZOOM = 3.2;
 
 export function openImageCropper(file) {
   return new Promise((resolve) => {
-    const objectUrl = URL.createObjectURL(file);
     const img = new Image();
+    let objectUrl = null;
 
     const overlay = document.createElement("div");
     overlay.className = "cropper-overlay";
@@ -25,7 +28,10 @@ export function openImageCropper(file) {
         <input type="range" class="cropper-zoom-slider" aria-label="Zoom" min="0" max="1" step="0.001" value="0" disabled />
         <svg class="cropper-zoom-icon" aria-hidden="true" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="10" r="6.5"/><line x1="19" y1="19" x2="14.8" y2="14.8"/></svg>
       </div>
-      <p class="cropper-hint">Drag to reposition · pinch or slide to zoom</p>`;
+      <div class="cropper-footer">
+        <button type="button" class="cropper-replace-btn">Choose a Different Photo</button>
+        <p class="cropper-hint">Drag to reposition · pinch or slide to zoom</p>
+      </div>`;
     document.body.appendChild(overlay);
 
     const viewport = overlay.querySelector(".cropper-viewport");
@@ -34,6 +40,12 @@ export function openImageCropper(file) {
     const slider = overlay.querySelector(".cropper-zoom-slider");
     const saveBtn = overlay.querySelector(".cropper-save");
     const cancelBtn = overlay.querySelector(".cropper-cancel");
+    const replaceBtn = overlay.querySelector(".cropper-replace-btn");
+    const replaceInput = document.createElement("input");
+    replaceInput.type = "file";
+    replaceInput.accept = "image/*";
+    replaceInput.className = "hidden";
+    overlay.appendChild(replaceInput);
 
     let viewportSize = 0;
     let baseScale = 1;  
@@ -47,7 +59,7 @@ export function openImageCropper(file) {
       settled = true;
       overlay.removeEventListener("click", onStageClickGuard);
       overlay.remove();
-      URL.revokeObjectURL(objectUrl);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
       resolve(result);
     }
     function onStageClickGuard(e) { if (e.target === overlay) e.stopPropagation(); }
@@ -55,24 +67,50 @@ export function openImageCropper(file) {
 
     cancelBtn.addEventListener("click", () => finish(null));
 
-    img.onload = () => {
-      naturalW = img.naturalWidth;
-      naturalH = img.naturalHeight;
-      imgEl.src = objectUrl;
+    function loadFile(nextFile, isReplace) {
+      const nextUrl = URL.createObjectURL(nextFile);
+      if (isReplace) {
+        saveBtn.disabled = true;
+        slider.disabled = true;
+      }
+      img.onload = () => {
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        objectUrl = nextUrl;
+        naturalW = img.naturalWidth;
+        naturalH = img.naturalHeight;
+        imgEl.src = objectUrl;
 
-      sizeViewport();
-      baseScale = Math.max(viewportSize / naturalW, viewportSize / naturalH);
-      zoom = MIN_ZOOM;
-      offsetX = 0;
-      offsetY = 0;
-      slider.disabled = false;
-      saveBtn.disabled = false;
-      applyTransform();
-    };
-    img.onerror = () => {
-      finish(null);
-    };
-    img.src = objectUrl;
+        sizeViewport();
+        baseScale = Math.max(viewportSize / naturalW, viewportSize / naturalH);
+        zoom = MIN_ZOOM;
+        offsetX = 0;
+        offsetY = 0;
+        slider.disabled = false;
+        saveBtn.disabled = false;
+        applyTransform();
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(nextUrl);
+        if (isReplace) {
+          showToast("Couldn't load that photo.");
+          saveBtn.disabled = !naturalW;
+          slider.disabled = !naturalW;
+        } else {
+          finish(null);
+        }
+      };
+      img.src = nextUrl;
+    }
+
+    loadFile(file, false);
+
+    replaceBtn.addEventListener("click", () => replaceInput.click());
+    replaceInput.addEventListener("change", () => {
+      const nextFile = replaceInput.files?.[0];
+      replaceInput.value = "";
+      if (!nextFile || !isAcceptableImageFile(nextFile)) return;
+      loadFile(nextFile, true);
+    });
 
     function sizeViewport() {
       const available = Math.min(window.innerWidth, window.innerHeight - 190);

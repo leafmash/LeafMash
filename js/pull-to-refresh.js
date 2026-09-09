@@ -2,7 +2,12 @@ const PULL_THRESHOLD = 70;
 const MAX_DRAG = 150;
 const DAMPING = 0.5;
 const CIRCUMFERENCE = 94.2;
+const MIN_SPIN_MS = 600;
 const SNAP_TRANSITION = "transform .32s cubic-bezier(.22,1,.36,1), opacity .22s ease";
+
+function minDelay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export function initPullToRefresh({ indicatorId, isActive, onRefresh, onArm }) {
   const indicator = document.getElementById(indicatorId);
@@ -74,7 +79,7 @@ export function initPullToRefresh({ indicatorId, isActive, onRefresh, onArm }) {
     indicator.style.transform = "translate(-50%, 54px) scale(1)";
     indicator.style.opacity = "1";
     try {
-      await onRefresh();
+      await Promise.all([onRefresh(), minDelay(MIN_SPIN_MS)]);
     } finally {
       refreshing = false;
       reset(true);
