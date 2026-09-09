@@ -276,9 +276,9 @@ let previousRoute = null;
 
 let routeFromMap = {};
 
-const TOPBAR_BACK_ROUTES = new Set(["search", "user-profile", "post-detail", "notices", "reports", "admin-verified", "settings"]);
+const TOPBAR_BACK_ROUTES = new Set(["search", "user-profile", "post-detail", "notices", "reports", "admin-verified", "settings", "routine"]);
 const FROM_TRACKED_ROUTES = new Set([...TOPBAR_BACK_ROUTES, "dm-thread"]);
-const BOTTOM_TAB_ROUTES = new Set(["wall", "resources", "message", "directory", "routine", "profile"]);
+const BOTTOM_TAB_ROUTES = new Set(["wall", "resources", "message", "directory", "profile"]);
 
 function buildHash(route, id, from) {
   const params = new URLSearchParams();
@@ -447,7 +447,7 @@ window.addEventListener("popstate", (e) => {
       webBackPressedOnce = false;
     } else {
       webBackPressedOnce = true;
-      showToast("আবার ব্যাক করলে অ্যাপ থেকে বেরিয়ে যাবেন");
+      showToast("Press back again to exit");
       history.pushState({ leafmashRoute: "wall" }, "", buildHash("wall"));
       clearTimeout(webBackPressTimeout);
       webBackPressTimeout = setTimeout(() => { webBackPressedOnce = false; }, 2000);

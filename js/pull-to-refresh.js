@@ -47,6 +47,7 @@ export function initPullToRefresh({ indicatorId, isActive, onRefresh, onArm }) {
     if (!pulling || refreshing) return;
     const diff = e.touches[0].clientY - startY;
     if (diff <= 0) { reset(false); return; }
+    e.preventDefault();
     indicator.style.transition = "none";
     const pull = dampedPull(diff);
     const wasArmed = armed;
@@ -58,7 +59,7 @@ export function initPullToRefresh({ indicatorId, isActive, onRefresh, onArm }) {
       indicator.classList.remove("armed");
     }
     paint(pull);
-  }, { passive: true });
+  }, { passive: false });
 
   document.addEventListener("touchend", async () => {
     if (!pulling || refreshing) return;
