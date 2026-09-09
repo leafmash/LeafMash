@@ -679,7 +679,7 @@ async function openActivityDestination(a) {
       break;
     }
     case "deadline": {
-      if (goToRouteRef) goToRouteRef("routine");
+      if (goToRouteRef) goToRouteRef("deadlines");
       if (a.deadlineId) {
         const { focusDeadline } = await import("./deadlines.js");
         focusDeadline(a.deadlineId);

@@ -17,10 +17,36 @@ const NOTES_LIMIT = 1000;
 
 const listEl = document.getElementById("deadline-list");
 const addBtn = document.getElementById("add-deadline-btn");
+const quickDotEl = document.getElementById("deadlines-quick-dot");
 
 let allDeadlines = [];
 let unsubscribeDeadlines = null;
 let deadlinesLoaded = false;
+
+function seenAtStorageKey() {
+  return `leafmash_deadlines_seen_at_${auth.currentUser?.uid || "anon"}`;
+}
+function loadSeenAt() {
+  const raw = Number(localStorage.getItem(seenAtStorageKey()));
+  return Number.isFinite(raw) ? raw : 0;
+}
+function saveSeenAt(ms) {
+  localStorage.setItem(seenAtStorageKey(), String(ms));
+}
+function latestActivityMs(d) {
+  return d.updatedAt?.toMillis?.() || d.createdAt?.toMillis?.() || 0;
+}
+function updateQuickDot() {
+  if (!quickDotEl) return;
+  const seenAt = loadSeenAt();
+  const hasUnseen = allDeadlines.some(d => latestActivityMs(d) > seenAt);
+  quickDotEl.classList.toggle("hidden", !hasUnseen);
+}
+export function markDeadlinesSeen() {
+  const latest = allDeadlines.reduce((max, d) => Math.max(max, latestActivityMs(d)), loadSeenAt());
+  saveSeenAt(latest || Date.now());
+  updateQuickDot();
+}
 
 export function initDeadlines() {
   if (!listEl) return;
@@ -40,6 +66,7 @@ export function initDeadlines() {
     allDeadlines = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     deadlinesLoaded = true;
     renderDeadlines();
+    updateQuickDot();
   }, (err) => {
     const { message, technical } = friendlyError(err, "Couldn't load deadlines.");
     showToast(message, { details: technical });
@@ -204,6 +231,7 @@ async function submitDeadline() {
       postedByUid: auth.currentUser.uid,
       postedByName: currentProfile ? currentProfile.name : "Admin",
       createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
       remindedAt: null
     });
     closeModal();
@@ -265,6 +293,7 @@ function openEditDeadlineModal(id) {
       await updateDoc(doc(db, "deadlines", id), {
         title, type, course, notes,
         dueAt: Timestamp.fromDate(dueDate),
+        updatedAt: serverTimestamp(),
         ...(dueChanged ? { remindedAt: null } : {})
       });
       closeModal();

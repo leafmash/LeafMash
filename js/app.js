@@ -15,7 +15,7 @@ import { mountSavedView, unmountSavedView } from "./saved.js";
 import { initDirectory, teardownDirectory } from "./directory.js";
 import { initRoutine, teardownRoutine, registerNotificationsRouter } from "./routine.js";
 import { renderAdminVerifiedPage } from "./admin-verified.js";
-import { initDeadlines, teardownDeadlines } from "./deadlines.js";
+import { initDeadlines, teardownDeadlines, markDeadlinesSeen } from "./deadlines.js";
 import { initGlobalSearch, ensureSearchDataLoaded, registerSearchRouter } from "./search.js";
 import { initPresence, teardownPresence } from "./presence.js";
 import { initMessages, teardownMessages, registerDmThreadRouter, openDmThread, getOpenDmUid, teardownDmThread, isClassChatSubtabActive } from "./messages.js";
@@ -260,6 +260,7 @@ const routeTitles = {
   message: "Messages",
   directory: "Classmate Directory",
   routine: "Weekly Routine",
+  deadlines: "Deadlines",
   profile: "My Profile",
   notices: "Notices & Notifications",
   reports: "Reported Posts",
@@ -276,7 +277,7 @@ let previousRoute = null;
 
 let routeFromMap = {};
 
-const TOPBAR_BACK_ROUTES = new Set(["search", "user-profile", "post-detail", "notices", "reports", "admin-verified", "settings", "routine"]);
+const TOPBAR_BACK_ROUTES = new Set(["search", "user-profile", "post-detail", "notices", "reports", "admin-verified", "settings", "routine", "deadlines"]);
 const FROM_TRACKED_ROUTES = new Set([...TOPBAR_BACK_ROUTES, "dm-thread"]);
 const BOTTOM_TAB_ROUTES = new Set(["wall", "resources", "message", "directory", "profile"]);
 
@@ -331,6 +332,7 @@ function goToRoute(route, { fromPopstate = false, replace = false, state = {} } 
   if (route === "settings") renderSettingsPage();
   if (route === "admin-verified") renderAdminVerifiedPage();
   if (route === "search") ensureSearchDataLoaded();
+  if (route === "deadlines") markDeadlinesSeen();
   const restoreY = SCROLL_MEMORY_EXCLUDED_ROUTES.has(route) ? 0 : (scrollPositions[route] || 0);
   window.scrollTo({ top: restoreY, behavior: "auto" });
   if (currentRoute === "post-detail" && route !== "post-detail") teardownPostDetail();

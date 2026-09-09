@@ -193,7 +193,7 @@ async function openResult(kind, id) {
     }
     case "deadline": {
       const { focusDeadline } = await import("./deadlines.js");
-      if (goToRouteRef) goToRouteRef("routine");
+      if (goToRouteRef) goToRouteRef("deadlines");
       focusDeadline(id);
       break;
     }
