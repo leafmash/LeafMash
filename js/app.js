@@ -52,7 +52,8 @@ initTheme();
 initPullToRefresh({
   indicatorId: "wall-ptr-indicator",
   isActive: () => currentRoute === "wall" && !appShell.classList.contains("hidden"),
-  onRefresh: refreshWall
+  onRefresh: refreshWall,
+  onArm: hapticTap
 });
 
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
