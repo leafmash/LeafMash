@@ -46,9 +46,10 @@ function autoGrowTextarea(el) {
   el.style.height = `${el.scrollHeight}px`;
 }
 
-function preventFocusSteal(el) {
-  el.addEventListener("mousedown", (e) => e.preventDefault());
-  el.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
+function wireSendFocusTracking(button, textarea) {
+  const capture = () => { button.dataset.keepFocus = document.activeElement === textarea ? "1" : "0"; };
+  button.addEventListener("mousedown", (e) => { e.preventDefault(); capture(); });
+  button.addEventListener("touchstart", capture, { passive: true });
 }
 
 function wireChatSendShortcut(textarea, submitFn) {
@@ -496,7 +497,7 @@ function subscribeClassChat() {
 async function submitClassChat() {
   const text = classChatInput.value.trim();
   if (!text || classChatSendBtn.disabled) return;
-  const wasFocused = document.activeElement === classChatInput;
+  const wasFocused = classChatSendBtn.dataset.keepFocus === "1" || document.activeElement === classChatInput;
   classChatInput.value = "";
   autoGrowTextarea(classChatInput);
   if (wasFocused) classChatInput.focus({ preventScroll: true });
@@ -929,7 +930,7 @@ async function submitDmMessage() {
   const otherUid = currentDmUid;
   if (!text || !conversationId || !otherUid || dmThreadSendBtn.disabled) return;
   if (dmThreadForm?.classList.contains("hidden")) return; 
-  const wasFocused = document.activeElement === dmThreadInput;
+  const wasFocused = dmThreadSendBtn.dataset.keepFocus === "1" || document.activeElement === dmThreadInput;
   dmThreadInput.value = "";
   autoGrowTextarea(dmThreadInput);
   if (wasFocused) dmThreadInput.focus({ preventScroll: true });
@@ -968,7 +969,7 @@ export function initMessages() {
     autoGrowTextarea(classChatInput);
   });
   wireChatSendShortcut(classChatInput, submitClassChat);
-  preventFocusSteal(classChatSendBtn);
+  wireSendFocusTracking(classChatSendBtn, classChatInput);
   subscribeClassChat();
   subscribeClassChatRead();
   paintClassChatOnlineCount();
@@ -981,7 +982,7 @@ export function initMessages() {
     else clearMyTypingSignal(currentDmConversationId);
   });
   wireChatSendShortcut(dmThreadInput, submitDmMessage);
-  preventFocusSteal(dmThreadSendBtn);
+  wireSendFocusTracking(dmThreadSendBtn, dmThreadInput);
 
   wireKebabMenus(document.getElementById("dm-thread-header-row"), {
     block: () => {
