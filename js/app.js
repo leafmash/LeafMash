@@ -51,7 +51,7 @@ initTheme();
 
 initPullToRefresh({
   indicatorId: "wall-ptr-indicator",
-  isActive: () => currentRoute === "wall" && !appShell.classList.contains("hidden"),
+  isActive: () => currentRoute === "wall" && !appShell.classList.contains("hidden") && document.getElementById("modal-overlay").classList.contains("hidden"),
   onRefresh: refreshWall,
   onArm: hapticTap
 });

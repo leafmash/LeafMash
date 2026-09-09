@@ -40,6 +40,25 @@ const dmThreadListEl = document.getElementById("dm-thread-list");
 const dmThreadForm = document.getElementById("dm-thread-form");
 const dmThreadInput = document.getElementById("dm-thread-input");
 const dmThreadSendBtn = document.getElementById("dm-thread-send-btn");
+
+function autoGrowTextarea(el) {
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
+
+function preventFocusSteal(el) {
+  el.addEventListener("mousedown", (e) => e.preventDefault());
+  el.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
+}
+
+function wireChatSendShortcut(textarea, submitFn) {
+  textarea.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      submitFn();
+    }
+  });
+}
 const dmThreadBackBtn = document.getElementById("dm-thread-back-btn");
 const dmThreadMoreMenu = document.getElementById("dm-thread-more-menu");
 const dmThreadBlockItem = document.getElementById("dm-thread-block-item");
@@ -189,13 +208,25 @@ function buildBubbleRowEl(ctx) {
       </div>
       <div class="chat-bubble-meta"><span>${timeLabel}</span></div>
     </div>`;
+  const metaSlot = row.querySelector(".chat-bubble-inline-meta");
+  if (metaSlot) metaSlot.dataset.metaSig = bubbleMetaSignature(ctx);
   return row;
+}
+
+function bubbleMetaSignature(ctx) {
+  const { showReceipt, pending, m, seen, isLastMine } = ctx;
+  if (!showReceipt) return "none";
+  return pending ? `pending:${m.sendStatus}:${isLastMine}` : `seen:${seen}:${isLastMine}`;
 }
 
 function applyBubbleMeta(row, ctx) {
   row.dataset.canDelete = ctx.canDelete ? "1" : "0";
   const metaSlot = row.querySelector(".chat-bubble-inline-meta");
-  if (metaSlot) metaSlot.innerHTML = bubbleMetaHtml(ctx);
+  if (!metaSlot) return;
+  const sig = bubbleMetaSignature(ctx);
+  if (metaSlot.dataset.metaSig === sig) return;
+  metaSlot.dataset.metaSig = sig;
+  metaSlot.innerHTML = bubbleMetaHtml(ctx);
 }
 
 function reconcileChatList(listEl, targetItems) {
@@ -467,6 +498,7 @@ async function submitClassChat() {
   if (!text || classChatSendBtn.disabled) return;
   const wasFocused = document.activeElement === classChatInput;
   classChatInput.value = "";
+  autoGrowTextarea(classChatInput);
   if (wasFocused) classChatInput.focus({ preventScroll: true });
   classChatSendBtn.disabled = true;
   classChatAtBottom = true; 
@@ -484,7 +516,8 @@ async function submitClassChat() {
       messageId: msgRef.id
     });
   } catch (err) {
-    classChatInput.value = text; 
+    classChatInput.value = text;
+    autoGrowTextarea(classChatInput);
     const { message, technical } = friendlyError(err, "Couldn't send that message.");
     showToast(message, { details: technical });
   }
@@ -898,6 +931,7 @@ async function submitDmMessage() {
   if (dmThreadForm?.classList.contains("hidden")) return; 
   const wasFocused = document.activeElement === dmThreadInput;
   dmThreadInput.value = "";
+  autoGrowTextarea(dmThreadInput);
   if (wasFocused) dmThreadInput.focus({ preventScroll: true });
   dmThreadSendBtn.disabled = true;
   dmThreadAtBottom = true;
@@ -919,6 +953,7 @@ async function submitDmMessage() {
     dmPendingSends = dmPendingSends.filter(p => p.clientId !== clientId);
     renderDmThreadFromState(conversationId);
     dmThreadInput.value = text;
+    autoGrowTextarea(dmThreadInput);
     const { message, technical } = friendlyError(err, "Couldn't send that message.");
     showToast(message, { details: technical });
   }
@@ -928,7 +963,12 @@ export function initMessages() {
   wireSubtabs();
 
   classChatForm?.addEventListener("submit", (e) => { e.preventDefault(); submitClassChat(); });
-  classChatInput?.addEventListener("input", () => { classChatSendBtn.disabled = !classChatInput.value.trim(); });
+  classChatInput?.addEventListener("input", () => {
+    classChatSendBtn.disabled = !classChatInput.value.trim();
+    autoGrowTextarea(classChatInput);
+  });
+  wireChatSendShortcut(classChatInput, submitClassChat);
+  preventFocusSteal(classChatSendBtn);
   subscribeClassChat();
   subscribeClassChatRead();
   paintClassChatOnlineCount();
@@ -936,9 +976,12 @@ export function initMessages() {
   dmThreadForm?.addEventListener("submit", (e) => { e.preventDefault(); submitDmMessage(); });
   dmThreadInput?.addEventListener("input", () => {
     dmThreadSendBtn.disabled = !dmThreadInput.value.trim();
+    autoGrowTextarea(dmThreadInput);
     if (dmThreadInput.value.trim()) sendMyTypingSignal(currentDmConversationId);
     else clearMyTypingSignal(currentDmConversationId);
   });
+  wireChatSendShortcut(dmThreadInput, submitDmMessage);
+  preventFocusSteal(dmThreadSendBtn);
 
   wireKebabMenus(document.getElementById("dm-thread-header-row"), {
     block: () => {
