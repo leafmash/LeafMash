@@ -1618,7 +1618,10 @@
   .cropper-controls { @apply flex items-center gap-3 px-6 shrink-0; height:64px; }
   .cropper-zoom-icon { @apply shrink-0; color: rgba(255,255,255,.55); }
   .cropper-zoom-slider { @apply w-full; accent-color: var(--color-gold-500); }
-  .cropper-hint { @apply text-center text-xs pb-4 shrink-0; color: rgba(255,255,255,.5); }
+  .cropper-footer { @apply flex flex-col items-center gap-2 shrink-0 pb-4; }
+  .cropper-replace-btn { @apply text-[.78rem] font-bold px-4 py-1.5 rounded-full; color:#fff; background: rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); }
+  .cropper-replace-btn:active { background: rgba(255,255,255,.2); }
+  .cropper-hint { @apply text-center text-xs; color: rgba(255,255,255,.5); }
 
   .post-image-grid { @apply grid gap-1 rounded-2xl overflow-hidden my-2; }
   .post-image-grid.one { grid-template-columns:1fr; }
