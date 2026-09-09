@@ -31,6 +31,7 @@ import { openImageCropper } from "./image-cropper.js";
 import { initPush, unregisterPushToken, registerNotificationTapHandler, consumeNativePendingDeepLink } from "./push.js";
 import { initBatteryOptimizationPrompt } from "./battery-optimization.js";
 import { getThemePreference, setThemePreference, initTheme } from "./theme.js";
+import { checkForcedUpdate } from "./app-update.js";
 
 const CapApp = window.Capacitor?.Plugins?.App;
 const CapStatusBar = window.Capacitor?.Plugins?.StatusBar;
@@ -65,7 +66,10 @@ const authScreen = document.getElementById("auth-screen");
 const appShell = document.getElementById("app-shell");
 
 if (CapSplashScreen) {
+  await checkForcedUpdate().catch(() => {});
   CapSplashScreen.hide({ fadeOutDuration: 300 }).catch(() => {});
+} else {
+  checkForcedUpdate().catch(() => {});
 }
 
 const offlineBanner = document.getElementById("offline-banner");
