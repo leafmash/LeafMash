@@ -35,7 +35,13 @@ export async function signUpload(req, res) {
     }
 
     const timestamp = Math.floor(Date.now() / 1000);
-    const paramsToSign = { folder, timestamp, upload_preset: UPLOAD_PRESET };
+    const paramsToSign = {
+      folder,
+      timestamp,
+      upload_preset: UPLOAD_PRESET,
+      unique_filename: "true",
+      use_filename: "true"
+    };
     const signature = signParams(paramsToSign, process.env.CLOUDINARY_API_SECRET);
 
     return res.status(200).json({
