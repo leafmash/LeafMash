@@ -4,7 +4,7 @@ import { getFirestore } from "firebase-admin/firestore";
 
 const CLOUD_NAME = "xreqa1wz";
 const UPLOAD_PRESET = "LeafMash";
-const ALLOWED_FOLDERS = new Set(["leafmash/avatars", "leafmash/posts", "leafmash/resources"]);
+const ALLOWED_FOLDERS = new Set(["leafmash/avatars", "leafmash/posts", "leafmash/resources", "leafmash/voice"]);
 
 function signParams(params, apiSecret) {
   const toSign = Object.keys(params)

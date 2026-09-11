@@ -1,9 +1,10 @@
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import { getAdminApp, verifyCaller, requirePost, sendError, ApiError, enforceRateLimit } from "../_lib/adminApp.js";
-import { requiredText } from "../_lib/validators.js";
+import { requiredText, validateVoiceMessage } from "../_lib/validators.js";
 
 const MESSAGE_TEXT_LIMIT = 2000;
+const VOICE_FOLDER = "leafmash/voice";
 const MIN_MS_BETWEEN_MESSAGES = 1500;
 
 function conversationIdFor(uidA, uidB) {
@@ -14,7 +15,7 @@ function truncate(text = "", max = 120) {
   return text.length > max ? text.slice(0, max) + "…" : text;
 }
 
-async function notifyRecipient(db, uid, otherUid, { conversationId, messageId, text, senderName, senderPhotoURL }) {
+async function notifyRecipient(db, uid, otherUid, { conversationId, messageId, text, isVoice, senderName, senderPhotoURL }) {
   const tokensSnap = await db.collection("users").doc(otherUid).collection("fcmTokens").get();
   const pairs = tokensSnap.docs.filter((d) => !d.data().revoked).map((d) => ({ uid: otherUid, token: d.id }));
   if (!pairs.length) return;
@@ -23,7 +24,7 @@ async function notifyRecipient(db, uid, otherUid, { conversationId, messageId, t
   const data = {
     type: "dm",
     title: `${senderName || "Someone"} sent you a message`,
-    body: truncate(text) || "Tap to view.",
+    body: (isVoice ? "🎤 Voice message" : truncate(text)) || "Tap to view.",
     url: `/#dm-thread?id=${uid}`,
     conversationId: String(conversationId),
     messageId: String(messageId),
@@ -65,7 +66,10 @@ export async function sendDmMessage(req, res) {
     if (!otherUid) throw new ApiError(400, "Missing targetUid.");
     if (otherUid === uid) throw new ApiError(400, "You can't message yourself.");
 
-    const text = requiredText(body.text, "Message", MESSAGE_TEXT_LIMIT);
+    const rawText = typeof body.text === "string" ? body.text.trim() : "";
+    const voice = validateVoiceMessage(body.audioUrl, body.audioDurationSec, VOICE_FOLDER);
+    if (!rawText && !voice) throw new ApiError(400, "Message is required.");
+    const text = rawText ? requiredText(body.text, "Message", MESSAGE_TEXT_LIMIT) : "";
 
     const [meSnap, otherSnap] = await Promise.all([
       db.collection("users").doc(uid).get(),
@@ -94,14 +98,14 @@ export async function sendDmMessage(req, res) {
     }
 
     const msgRef = convRef.collection("messages").doc();
+    const msgData = { senderUid: uid, createdAt: FieldValue.serverTimestamp() };
+    if (text) msgData.text = text;
+    if (voice) { msgData.audioUrl = voice.audioUrl; msgData.audioDurationSec = voice.audioDurationSec; }
+
     const batch = db.batch();
-    batch.set(msgRef, {
-      senderUid: uid,
-      text,
-      createdAt: FieldValue.serverTimestamp()
-    });
+    batch.set(msgRef, msgData);
     batch.update(convRef, {
-      lastMessageText: text.length > 140 ? text.slice(0, 140) + "…" : text,
+      lastMessageText: voice ? "🎤 Voice message" : (text.length > 140 ? text.slice(0, 140) + "…" : text),
       lastMessageAt: FieldValue.serverTimestamp(),
       lastSenderUid: uid,
       [`lastReadAt.${uid}`]: FieldValue.serverTimestamp()
@@ -110,7 +114,7 @@ export async function sendDmMessage(req, res) {
 
     const senderName = meSnap.get("name") || "";
     const senderPhotoURL = meSnap.get("photoURL") || "";
-    await notifyRecipient(db, uid, otherUid, { conversationId, messageId: msgRef.id, text, senderName, senderPhotoURL }).catch(() => null);
+    await notifyRecipient(db, uid, otherUid, { conversationId, messageId: msgRef.id, text, isVoice: !!voice, senderName, senderPhotoURL }).catch(() => null);
 
     return res.status(200).json({ messageId: msgRef.id, conversationId, senderName });
   } catch (err) {
