@@ -54,6 +54,16 @@ export function requiredUrl(value, field, maxLen = 500) {
   return s;
 }
 
+export function validateVoiceMessage(url, durationSec, folder) {
+  if (url === undefined && durationSec === undefined) return null;
+  if (!isOwnCloudinaryUrl(url, folder)) throw new ApiError(400, "Invalid voice message upload.");
+  const dur = Number(durationSec);
+  if (!Number.isFinite(dur) || dur <= 0 || dur > 60) {
+    throw new ApiError(400, "Voice messages must be 60 seconds or less.");
+  }
+  return { audioUrl: url, audioDurationSec: Math.round(dur) };
+}
+
 export function validateImages(raw, folder, max = 6) {
   if (raw === undefined || raw === null) return [];
   if (!Array.isArray(raw)) throw new ApiError(400, "images must be a list.");
