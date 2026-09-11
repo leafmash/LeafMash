@@ -125,15 +125,30 @@ function mergedActivity() {
     .slice(0, 60);
 }
 
+function toMillisFlexible(ts) {
+  if (!ts) return null;
+  if (typeof ts === "number") return ts;
+  if (typeof ts.toMillis === "function") return ts.toMillis();
+  if (typeof ts.toDate === "function") return ts.toDate().getTime();
+  if (ts instanceof Date) return ts.getTime();
+  if (typeof ts._seconds === "number") return ts._seconds * 1000 + Math.floor((ts._nanoseconds || 0) / 1e6);
+  if (typeof ts.seconds === "number") return ts.seconds * 1000 + Math.floor((ts.nanoseconds || 0) / 1e6);
+  if (typeof ts === "string") {
+    const d = new Date(ts);
+    return isNaN(d.getTime()) ? null : d.getTime();
+  }
+  return null;
+}
+
 function visibleToMe(a) {
   if (a.type === "comment" || a.type === "reply" || a.type === "like" || a.type === "comment-like" || a.type === "mention") {
     return a.targetUid === auth.currentUser?.uid;
   }
   if (a.actorUid === auth.currentUser?.uid) return false;
 
-  const joinedAt = currentProfile?.createdAt?.toDate?.();
-  const postedAt = a.createdAt?.toDate?.();
-  if (joinedAt && postedAt && postedAt < joinedAt) return false;
+  const joinedMs = toMillisFlexible(currentProfile?.createdAt);
+  const postedMs = toMillisFlexible(a.createdAt);
+  if (joinedMs && postedMs && postedMs < joinedMs) return false;
   return true;
 }
 

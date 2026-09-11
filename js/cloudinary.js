@@ -1,9 +1,6 @@
 import { callApi } from "./api-client.js";
 
 async function getSignature(folder) {
-  // Every upload requires a fresh, short-lived, server-issued signature —
-  // tied to a signed-in user and a whitelisted folder — so the Cloudinary
-  // preset can no longer be used anonymously from outside the app.
   return callApi("sign-upload", { folder }, { skipClientCooldown: true });
 }
 
@@ -54,6 +51,8 @@ async function uploadSigned(file, filename, sig, uploadUrl, extraFields = {}) {
   form.append("signature", sig.signature);
   form.append("upload_preset", sig.uploadPreset);
   form.append("folder", sig.folder);
+  form.append("unique_filename", "true");
+  form.append("use_filename", "true");
   for (const [k, v] of Object.entries(extraFields)) form.append(k, v);
 
   const res = await fetch(uploadUrl, { method: "POST", body: form });
@@ -76,9 +75,6 @@ export async function uploadImage(file, { maxDim = 1600, quality = 0.8, folder }
 }
 
 export async function uploadImages(files, opts = {}) {
-  // One signature covers the whole batch (Cloudinary signatures aren't
-  // per-file), so we avoid hammering the sign-upload rate limit when a post
-  // has several attached photos.
   const { maxDim = 1600, quality = 0.8, folder } = opts;
   const fileList = Array.from(files);
   const sig = await getSignature(folder);
@@ -92,8 +88,5 @@ export async function uploadImages(files, opts = {}) {
 export async function uploadRawFile(file, { folder } = {}) {
   const sig = await getSignature(folder);
   const uploadUrl = `https://api.cloudinary.com/v1_1/${sig.cloudName}/raw/upload`;
-  return uploadSigned(file, file.name || "upload", sig, uploadUrl, {
-    use_filename: "true",
-    unique_filename: "true"
-  });
+  return uploadSigned(file, file.name || "upload", sig, uploadUrl);
 }
