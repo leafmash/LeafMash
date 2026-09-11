@@ -8,6 +8,10 @@
     {
       "path": "/api/update-disposable-domains",
       "schedule": "0 4 * * 0"
+    },
+    {
+      "path": "/api/cleanup-voice-messages",
+      "schedule": "0 5 * * *"
     }
   ]
 }

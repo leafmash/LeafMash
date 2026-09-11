@@ -31,6 +31,22 @@ service cloud.firestore {
       return !(field in request.resource.data) ||
         (request.resource.data[field] is string && request.resource.data[field].size() <= maxLen);
     }
+    function hasNonEmptyText(field, maxLen) {
+      return (field in request.resource.data) &&
+        request.resource.data[field] is string &&
+        request.resource.data[field].size() > 0 &&
+        request.resource.data[field].size() <= maxLen;
+    }
+    function voiceMsgValid(maxSec) {
+      return ("audioUrl" in request.resource.data) &&
+        request.resource.data.audioUrl is string &&
+        request.resource.data.audioUrl.size() < 600 &&
+        request.resource.data.audioUrl.matches("https://res[.]cloudinary[.]com/.*/leafmash/voice/.*") &&
+        ("audioDurationSec" in request.resource.data) &&
+        request.resource.data.audioDurationSec is number &&
+        request.resource.data.audioDurationSec > 0 &&
+        request.resource.data.audioDurationSec <= maxSec;
+    }
 
     match /users/{uid} {
       allow read: if isSignedIn();
@@ -102,7 +118,8 @@ service cloud.firestore {
 
     match /classChat/{messageId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && request.resource.data.authorUid == request.auth.uid && textWithinLimit("text", 1000);
+      allow create: if isSignedIn() && request.resource.data.authorUid == request.auth.uid &&
+        (hasNonEmptyText("text", 1000) || voiceMsgValid(60));
       allow update: if isOwner(resource.data.authorUid) && textWithinLimit("text", 1000);
       allow delete: if isOwner(resource.data.authorUid) || isAdmin();
     }
@@ -147,7 +164,8 @@ service cloud.firestore {
           return ("blockedBy" in convo) && convo.blockedBy.size() > 0;
         }
         allow read: if isDmParticipant();
-        allow create: if isDmParticipant() && !isDmBlocked() && request.resource.data.senderUid == request.auth.uid && textWithinLimit("text", 2000);
+        allow create: if isDmParticipant() && !isDmBlocked() && request.resource.data.senderUid == request.auth.uid &&
+          (hasNonEmptyText("text", 2000) || voiceMsgValid(60));
         allow update: if false; 
         allow delete: if isOwner(resource.data.senderUid);
       }
