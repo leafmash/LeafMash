@@ -90,3 +90,10 @@ export async function uploadRawFile(file, { folder } = {}) {
   const uploadUrl = `https://api.cloudinary.com/v1_1/${sig.cloudName}/raw/upload`;
   return uploadSigned(file, file.name || "upload", sig, uploadUrl);
 }
+
+export async function uploadAudio(blob, { folder } = {}) {
+  const sig = await getSignature(folder);
+  const uploadUrl = `https://api.cloudinary.com/v1_1/${sig.cloudName}/raw/upload`;
+  const ext = blob.type.includes("ogg") ? "ogg" : blob.type.includes("mp4") ? "m4a" : "webm";
+  return uploadSigned(blob, `voice-${Date.now()}.${ext}`, sig, uploadUrl);
+}

@@ -17,6 +17,8 @@ import { authorProfile } from "./wall.js";
 import { getAllStudents } from "./directory.js";
 import { isUserOnline, avatarPresenceDotHtml, presenceTextHtml, paintPresenceUI } from "./presence.js";
 import { triggerPush } from "./push-trigger.js";
+import { uploadAudio } from "./cloudinary.js";
+import { wireVoiceRecorder, voiceBubbleHtml, wireVoicePlayback } from "./voice-recorder.js";
 
 const subtabBtns = document.querySelectorAll(".msg-subtab-btn");
 const subtabPanels = document.querySelectorAll(".msg-subtab-panel");
@@ -25,6 +27,8 @@ const classChatList = document.getElementById("class-chat-list");
 const classChatForm = document.getElementById("class-chat-form");
 const classChatInput = document.getElementById("class-chat-input");
 const classChatSendBtn = document.getElementById("class-chat-send-btn");
+const classChatMicBtn = document.getElementById("class-chat-mic-btn");
+const classChatVoiceBar = document.getElementById("class-chat-voice-bar");
 const classChatOnlineCount = document.getElementById("class-chat-online-count");
 
 const dmListEl = document.getElementById("dm-conversation-list");
@@ -40,10 +44,18 @@ const dmThreadListEl = document.getElementById("dm-thread-list");
 const dmThreadForm = document.getElementById("dm-thread-form");
 const dmThreadInput = document.getElementById("dm-thread-input");
 const dmThreadSendBtn = document.getElementById("dm-thread-send-btn");
+const dmThreadMicBtn = document.getElementById("dm-thread-mic-btn");
+const dmThreadVoiceBar = document.getElementById("dm-thread-voice-bar");
 
 function autoGrowTextarea(el) {
   el.style.height = "auto";
   el.style.height = `${el.scrollHeight}px`;
+}
+
+function syncSendMicToggle(hasText, sendBtn, micBtn) {
+  sendBtn.disabled = !hasText;
+  sendBtn.classList.toggle("hidden", !hasText);
+  if (micBtn && micBtn.dataset.unsupported !== "1") micBtn.classList.toggle("hidden", hasText);
 }
 
 function wireSendFocusTracking(button, textarea) {
@@ -196,15 +208,17 @@ function buildBubbleRowEl(ctx) {
   const { m, uid, mine, profile, grouped, showAvatar, showNames, isNew, canDelete, timeLabel } = ctx;
   const row = document.createElement("div");
   row.className = `chat-bubble-row${mine ? " mine" : ""}${isNew ? " msg-enter" : ""}`;
+  const isVoice = !!m.audioUrl;
   row.dataset.rowKey = m.id;
   row.dataset.msgId = m.id;
   row.dataset.canDelete = canDelete ? "1" : "0";
+  row.dataset.isVoice = isVoice ? "1" : "0";
   row.innerHTML = `
     ${showAvatar ? (grouped ? `<span style="width:26px" aria-hidden="true"></span>` : `<span class="avatar" data-author="${escapeAttr(uid || "")}">${avatarInner(profile)}</span>`) : ""}
     <div class="chat-bubble-group">
       ${!mine && !grouped && showNames ? `<span class="chat-bubble-name">${nameWithBadge(profile.name || "Classmate", profile.email, uid)}</span>` : ""}
-      <div class="chat-bubble">
-        <span class="chat-bubble-text">${richTextHtml(m.text || "", [])}</span>
+      <div class="chat-bubble${isVoice ? " chat-bubble-voice" : ""}">
+        <span class="chat-bubble-text">${isVoice ? voiceBubbleHtml(m) : richTextHtml(m.text || "", [])}</span>
         <span class="chat-bubble-inline-meta">${bubbleMetaHtml(ctx)}</span>
       </div>
       <div class="chat-bubble-meta"><span>${timeLabel}</span></div>
@@ -306,6 +320,7 @@ function renderChatBubbles(listEl, docs, { emptyText, showNames = true, showAvat
   lastRenderedIds.set(listEl, nextIds);
   wireRichTextClicks(listEl);
   wireMessageLongPress(listEl);
+  wireVoicePlayback(listEl);
 }
 
 const LONG_PRESS_MS = 420;
@@ -358,6 +373,7 @@ function openMessageActionMenu(row) {
   closeMessageActionMenu();
   const text = messageTextCache.get(row.dataset.msgId) || "";
   const canDelete = row.dataset.canDelete === "1";
+  const isVoice = row.dataset.isVoice === "1";
   const mine = row.classList.contains("mine");
 
   const backdrop = document.createElement("div");
@@ -367,10 +383,10 @@ function openMessageActionMenu(row) {
   const menu = document.createElement("div");
   menu.className = "msg-action-menu";
   menu.innerHTML = `
-    <button type="button" class="msg-action-item" data-action="copy">
+    ${isVoice ? "" : `<button type="button" class="msg-action-item" data-action="copy">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
       Copy
-    </button>
+    </button>`}
     ${canDelete ? `<button type="button" class="msg-action-item danger" data-action="delete">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
       Delete
@@ -492,6 +508,28 @@ function subscribeClassChat() {
     showToast(message, { details: technical });
   });
   classChatList.addEventListener("scroll", () => { classChatAtBottom = isNearBottom(classChatList); });
+}
+
+async function submitClassChatVoice(blob, durationSec) {
+  try {
+    const audioUrl = await uploadAudio(blob, { folder: "leafmash/voice" });
+    const msgRef = await addDoc(collection(db, "classChat"), {
+      authorUid: auth.currentUser.uid,
+      authorName: currentProfile?.name || auth.currentUser.email,
+      audioUrl,
+      audioDurationSec: durationSec,
+      createdAt: serverTimestamp()
+    });
+    triggerPush({
+      type: "classChat",
+      text: "🎤 Voice message",
+      actorName: currentProfile?.name || auth.currentUser.email,
+      messageId: msgRef.id
+    });
+  } catch (err) {
+    const { message, technical } = friendlyError(err, "Couldn't send that voice message.");
+    showToast(message, { details: technical });
+  }
 }
 
 async function submitClassChat() {
@@ -924,6 +962,19 @@ function deleteDmMessage(conversationId, msgId) {
   });
 }
 
+async function submitDmVoice(blob, durationSec) {
+  const conversationId = currentDmConversationId;
+  const otherUid = currentDmUid;
+  if (!conversationId || !otherUid) return;
+  try {
+    const audioUrl = await uploadAudio(blob, { folder: "leafmash/voice" });
+    await callApi("send-dm-message", { targetUid: otherUid, audioUrl, audioDurationSec: durationSec });
+  } catch (err) {
+    const { message, technical } = friendlyError(err, "Couldn't send that voice message.");
+    showToast(message, { details: technical });
+  }
+}
+
 async function submitDmMessage() {
   const text = dmThreadInput.value.trim();
   const conversationId = currentDmConversationId;
@@ -965,24 +1016,33 @@ export function initMessages() {
 
   classChatForm?.addEventListener("submit", (e) => { e.preventDefault(); submitClassChat(); });
   classChatInput?.addEventListener("input", () => {
-    classChatSendBtn.disabled = !classChatInput.value.trim();
+    syncSendMicToggle(!!classChatInput.value.trim(), classChatSendBtn, classChatMicBtn);
     autoGrowTextarea(classChatInput);
   });
   wireChatSendShortcut(classChatInput, submitClassChat);
   wireSendFocusTracking(classChatSendBtn, classChatInput);
+  wireVoiceRecorder({
+    bar: classChatVoiceBar, micBtn: classChatMicBtn, form: classChatForm,
+    folder: "leafmash/voice", onSend: submitClassChatVoice
+  });
   subscribeClassChat();
   subscribeClassChatRead();
   paintClassChatOnlineCount();
 
   dmThreadForm?.addEventListener("submit", (e) => { e.preventDefault(); submitDmMessage(); });
   dmThreadInput?.addEventListener("input", () => {
-    dmThreadSendBtn.disabled = !dmThreadInput.value.trim();
+    const hasText = !!dmThreadInput.value.trim();
+    syncSendMicToggle(hasText, dmThreadSendBtn, dmThreadMicBtn);
     autoGrowTextarea(dmThreadInput);
-    if (dmThreadInput.value.trim()) sendMyTypingSignal(currentDmConversationId);
+    if (hasText) sendMyTypingSignal(currentDmConversationId);
     else clearMyTypingSignal(currentDmConversationId);
   });
   wireChatSendShortcut(dmThreadInput, submitDmMessage);
   wireSendFocusTracking(dmThreadSendBtn, dmThreadInput);
+  wireVoiceRecorder({
+    bar: dmThreadVoiceBar, micBtn: dmThreadMicBtn, form: dmThreadForm,
+    folder: "leafmash/voice", onSend: submitDmVoice
+  });
 
   wireKebabMenus(document.getElementById("dm-thread-header-row"), {
     block: () => {
