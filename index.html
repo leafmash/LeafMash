@@ -329,8 +329,8 @@
     .auth-brand-mid h1 { font-size:2.3rem; max-width:380px; }
     .auth-brand-mid p { max-width:340px; }
     .auth-feature-list { @apply flex; }
-    .auth-panel-form { align-items:center; padding:40px; height:100vh; overflow-y:auto; }
-    .auth-card { padding: 6px 20px 20px; }
+    .auth-panel-form { padding:40px; height:100vh; overflow-y:auto; }
+    .auth-card { padding: 6px 20px 20px; margin-top:auto; margin-bottom:auto; }
   }
 
   .field-line, .field { @apply flex flex-col gap-1.5 relative; }
@@ -1857,14 +1857,18 @@
   .comment-char-counter { margin-top:-6px; padding-right:44px; }
 
   .offline-banner {
-    @apply fixed top-0 left-0 right-0 z-[250] flex items-center justify-center gap-2 text-white text-[.8rem] font-semibold text-center;
-    padding:10px 16px; padding-top:calc(10px + env(safe-area-inset-top));
+    @apply fixed left-0 right-0 z-[250] flex items-center justify-center gap-2 text-white text-[.8rem] font-semibold text-center;
+    top:58px;
+    padding:10px 16px;
     background: linear-gradient(120deg, var(--color-clay-600), #8a3d1a);
     box-shadow: 0 4px 14px rgba(0,0,0,.18);
-    transform: translateY(-100%); transition: transform .3s ease;
+    transform: translateY(-150%); transition: transform .3s ease;
   }
   .offline-banner svg { @apply shrink-0; }
   .offline-banner.show { transform: translateY(0); }
+  @media (min-width:900px) {
+    .offline-banner { top:64px; }
+  }
 }
 </style>
 </head>
