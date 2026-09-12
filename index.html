@@ -48,19 +48,24 @@
   position: fixed; left: 0; right: 0; z-index: 250;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   color: #fff; font-size: .8rem; font-weight: 600; text-align: center;
-  top: calc(58px + env(safe-area-inset-top, 0px));
+  top: env(safe-area-inset-top, 0px);
   padding: 10px 16px;
   background: linear-gradient(120deg, #a24b23, #8a3d1a);
   box-shadow: 0 4px 14px rgba(0,0,0,.18);
   transform: translateY(-150%);
-  transition: transform .3s ease;
+  transition: transform .3s ease, top .2s ease;
 }
 #offline-banner svg { flex-shrink: 0; }
 #offline-banner.show { transform: translateY(0); }
-@media (min-width: 900px) {
-  #offline-banner { top: calc(64px + env(safe-area-inset-top, 0px)); }
+body:has(#app-shell:not(.hidden):not(.chat-mode)) #offline-banner {
+  top: calc(58px + env(safe-area-inset-top, 0px));
 }
-.is-native-android #offline-banner { top: calc(58px + env(safe-area-inset-top, 0px) + 28px); }
+@media (min-width: 900px) {
+  body:has(#app-shell:not(.hidden):not(.chat-mode)) #offline-banner { top: calc(64px + env(safe-area-inset-top, 0px)); }
+}
+.is-native-android body:has(#app-shell:not(.hidden):not(.chat-mode)) #offline-banner {
+  top: calc(58px + env(safe-area-inset-top, 0px) + 28px);
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <style type="text/tailwindcss">
