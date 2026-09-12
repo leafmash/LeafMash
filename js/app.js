@@ -38,6 +38,10 @@ const CapStatusBar = window.Capacitor?.Plugins?.StatusBar;
 const CapSplashScreen = window.Capacitor?.Plugins?.SplashScreen;
 const CapHaptics = window.Capacitor?.Plugins?.Haptics;
 
+if (window.Capacitor?.isNativePlatform?.() && window.Capacitor.getPlatform?.() === "android") {
+  document.documentElement.classList.add("is-native-android");
+}
+
 if (CapStatusBar) {
   CapStatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
   CapStatusBar.setBackgroundColor({ color: "#0f2e1d" }).catch(() => {});
