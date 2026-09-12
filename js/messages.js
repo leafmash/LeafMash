@@ -124,11 +124,37 @@ export function isClassChatSubtabActive() {
   return document.querySelector('.msg-subtab-panel[data-msgtab-panel="class"]')?.classList.contains("active");
 }
 
+let classChatHistoryPushed = false;
+
+function openClassChatSubtab() {
+  if (isClassChatSubtabActive()) return;
+  history.pushState({ ...(history.state || {}), leafmashRoute: "message", classChatOpen: true }, "", location.hash);
+  classChatHistoryPushed = true;
+  activateSubtab("class");
+}
+
 export function closeClassChatSubtab() {
   if (!isClassChatSubtabActive()) return false;
-  activateSubtab("dm");
+  if (classChatHistoryPushed) {
+    classChatHistoryPushed = false;
+    history.back();
+  } else {
+    activateSubtab("dm");
+  }
   return true;
 }
+
+export function resetClassChatSubtabHistory() {
+  classChatHistoryPushed = false;
+  if (isClassChatSubtabActive()) activateSubtab("dm");
+}
+
+window.addEventListener("popstate", (e) => {
+  if (classChatHistoryPushed && !(e.state && e.state.classChatOpen)) {
+    classChatHistoryPushed = false;
+    if (isClassChatSubtabActive()) activateSubtab("dm");
+  }
+});
 
 function syncMessageChatMode() {
   document.getElementById("app-shell")?.classList.toggle("chat-mode", isClassChatSubtabActive());
@@ -144,7 +170,7 @@ function activateSubtab(name) {
 }
 
 function wireSubtabs() {
-  document.getElementById("class-chat-back-btn")?.addEventListener("click", () => activateSubtab("dm"));
+  document.getElementById("class-chat-back-btn")?.addEventListener("click", () => closeClassChatSubtab());
 }
 
 const CLASS_CHAT_TEXT_LIMIT = 1000;
@@ -666,7 +692,7 @@ function wireDeptChatPinCard() {
   dmListEl.querySelectorAll(".dept-chat-pin-card").forEach(btn => {
     if (btn.dataset.wired) return;
     btn.dataset.wired = "1";
-    btn.addEventListener("click", () => activateSubtab("class"));
+    btn.addEventListener("click", () => openClassChatSubtab());
   });
 }
 

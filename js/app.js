@@ -18,7 +18,7 @@ import { renderAdminVerifiedPage } from "./admin-verified.js";
 import { initDeadlines, teardownDeadlines, markDeadlinesSeen } from "./deadlines.js";
 import { initGlobalSearch, ensureSearchDataLoaded, registerSearchRouter } from "./search.js";
 import { initPresence, teardownPresence } from "./presence.js";
-import { initMessages, teardownMessages, registerDmThreadRouter, openDmThread, getOpenDmUid, teardownDmThread, isClassChatSubtabActive, closeClassChatSubtab } from "./messages.js";
+import { initMessages, teardownMessages, registerDmThreadRouter, openDmThread, getOpenDmUid, teardownDmThread, isClassChatSubtabActive, closeClassChatSubtab, resetClassChatSubtabHistory } from "./messages.js";
 import { openUserProfilePage, loadUserPosts, registerProfilePageRouter, getOpenProfileUid, teardownProfilePage } from "./profile-view.js";
 import { openPostDetailPage, registerPostDetailRouter, teardownPostDetail, getOpenPostId } from "./post-detail.js";
 import {
@@ -380,6 +380,7 @@ function goToRoute(route, { fromPopstate = false, replace = false, state = {} } 
   if (currentRoute === "profile" && route !== "profile") unmountSavedView();
 
   const priorRoute = currentRoute;
+  if (priorRoute === "message" && route !== "message") resetClassChatSubtabHistory();
   currentRoute = route;
   const historyState = { leafmashRoute: route, ...state, from };
   const hash = buildHash(route, id, from);
