@@ -1,10 +1,27 @@
 package com.leafmash.app
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.webkit.PermissionRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import com.getcapacitor.BridgeActivity
+import com.getcapacitor.BridgeWebChromeClient
 
 class MainActivity : BridgeActivity() {
+
+    private var pendingMicPermissionRequest: PermissionRequest? = null
+
+    private val micPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val request = pendingMicPermissionRequest
+        pendingMicPermissionRequest = null
+        if (request == null) return@registerForActivityResult
+        runOnUiThread {
+            if (granted) request.grant(request.resources) else request.deny()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         registerPlugin(DeepLinkPlugin::class.java)
@@ -12,6 +29,30 @@ class MainActivity : BridgeActivity() {
         registerPlugin(AppUpdaterPlugin::class.java)
         super.onCreate(savedInstanceState)
         capturePendingDeepLink(intent)
+        setupMicPermissionHandling()
+    }
+
+    private fun setupMicPermissionHandling() {
+        val activeBridge = bridge ?: return
+        val webView = activeBridge.webView ?: return
+        webView.webChromeClient = object : BridgeWebChromeClient(activeBridge) {
+            override fun onPermissionRequest(request: PermissionRequest) {
+                if (request.resources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
+                    handleAudioCaptureRequest(request)
+                } else {
+                    super.onPermissionRequest(request)
+                }
+            }
+        }
+    }
+
+    private fun handleAudioCaptureRequest(request: PermissionRequest) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            runOnUiThread { request.grant(request.resources) }
+            return
+        }
+        pendingMicPermissionRequest = request
+        micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
     }
 
     override fun onNewIntent(intent: Intent) {
