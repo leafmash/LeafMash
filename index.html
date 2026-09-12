@@ -53,10 +53,11 @@
   background: linear-gradient(120deg, #a24b23, #8a3d1a);
   box-shadow: 0 4px 14px rgba(0,0,0,.18);
   transform: translateY(-150%);
-  transition: transform .3s ease, top .2s ease;
+  opacity: 0;
+  transition: transform .3s ease, opacity .15s ease, top .2s ease;
 }
 #offline-banner svg { flex-shrink: 0; }
-#offline-banner.show { transform: translateY(0); }
+#offline-banner.show { transform: translateY(0); opacity: 1; }
 body:has(#app-shell:not(.hidden):not(.chat-mode)) #offline-banner {
   top: calc(58px + env(safe-area-inset-top, 0px));
 }
