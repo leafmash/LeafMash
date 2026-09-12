@@ -18,7 +18,7 @@ import { renderAdminVerifiedPage } from "./admin-verified.js";
 import { initDeadlines, teardownDeadlines, markDeadlinesSeen } from "./deadlines.js";
 import { initGlobalSearch, ensureSearchDataLoaded, registerSearchRouter } from "./search.js";
 import { initPresence, teardownPresence } from "./presence.js";
-import { initMessages, teardownMessages, registerDmThreadRouter, openDmThread, getOpenDmUid, teardownDmThread, isClassChatSubtabActive } from "./messages.js";
+import { initMessages, teardownMessages, registerDmThreadRouter, openDmThread, getOpenDmUid, teardownDmThread, isClassChatSubtabActive, closeClassChatSubtab } from "./messages.js";
 import { openUserProfilePage, loadUserPosts, registerProfilePageRouter, getOpenProfileUid, teardownProfilePage } from "./profile-view.js";
 import { openPostDetailPage, registerPostDetailRouter, teardownPostDetail, getOpenPostId } from "./post-detail.js";
 import {
@@ -510,6 +510,10 @@ if (CapApp) {
     }
     if (!document.getElementById("modal-overlay").classList.contains("hidden")) {
       history.back();
+      return;
+    }
+    if (currentRoute === "message" && closeClassChatSubtab()) {
+      hapticTap();
       return;
     }
     if (canGoBack) {

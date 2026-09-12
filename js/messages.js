@@ -124,6 +124,12 @@ export function isClassChatSubtabActive() {
   return document.querySelector('.msg-subtab-panel[data-msgtab-panel="class"]')?.classList.contains("active");
 }
 
+export function closeClassChatSubtab() {
+  if (!isClassChatSubtabActive()) return false;
+  activateSubtab("dm");
+  return true;
+}
+
 function syncMessageChatMode() {
   document.getElementById("app-shell")?.classList.toggle("chat-mode", isClassChatSubtabActive());
 }
