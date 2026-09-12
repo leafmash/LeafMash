@@ -106,7 +106,15 @@ export function wireVoiceRecorder({ bar, micBtn, form, folder, onSend }) {
   async function startRecording() {
     if (mediaRecorder || busy) return;
     try {
-      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+          sampleRate: 48000
+        }
+      });
     } catch {
       showToast("Microphone access is needed to record a voice message.");
       return;
@@ -114,7 +122,9 @@ export function wireVoiceRecorder({ bar, micBtn, form, folder, onSend }) {
     cancelled = false;
     chunks = [];
     const mimeType = pickMimeType();
-    mediaRecorder = new MediaRecorder(mediaStream, mimeType ? { mimeType } : undefined);
+    const recorderOptions = { audioBitsPerSecond: 128000 };
+    if (mimeType) recorderOptions.mimeType = mimeType;
+    mediaRecorder = new MediaRecorder(mediaStream, recorderOptions);
     mediaRecorder.addEventListener("dataavailable", (e) => { if (e.data.size) chunks.push(e.data); });
     mediaRecorder.addEventListener("stop", handleStopped);
     mediaRecorder.start(250);
