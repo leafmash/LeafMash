@@ -43,6 +43,25 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
 
+<style>
+#offline-banner {
+  position: fixed; left: 0; right: 0; z-index: 250;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  color: #fff; font-size: .8rem; font-weight: 600; text-align: center;
+  top: calc(58px + env(safe-area-inset-top, 0px));
+  padding: 10px 16px;
+  background: linear-gradient(120deg, #a24b23, #8a3d1a);
+  box-shadow: 0 4px 14px rgba(0,0,0,.18);
+  transform: translateY(-150%);
+  transition: transform .3s ease;
+}
+#offline-banner svg { flex-shrink: 0; }
+#offline-banner.show { transform: translateY(0); }
+@media (min-width: 900px) {
+  #offline-banner { top: calc(64px + env(safe-area-inset-top, 0px)); }
+}
+.is-native-android #offline-banner { top: calc(58px + env(safe-area-inset-top, 0px) + 28px); }
+</style>
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <style type="text/tailwindcss">
 
@@ -1902,25 +1921,12 @@
   .char-counter-warn { color: var(--color-clay-600); }
   .comment-char-counter { margin-top:-6px; padding-right:44px; }
 
-  .offline-banner {
-    @apply fixed left-0 right-0 z-[250] flex items-center justify-center gap-2 text-white text-[.8rem] font-semibold text-center;
-    top:58px;
-    padding:10px 16px;
-    background: linear-gradient(120deg, var(--color-clay-600), #8a3d1a);
-    box-shadow: 0 4px 14px rgba(0,0,0,.18);
-    transform: translateY(-150%); transition: transform .3s ease;
-  }
-  .offline-banner svg { @apply shrink-0; }
-  .offline-banner.show { transform: translateY(0); }
-  @media (min-width:900px) {
-    .offline-banner { top:64px; }
-  }
 }
 </style>
 </head>
 <body>
 
-  <div id="offline-banner" class="offline-banner" role="status" aria-live="polite">
+  <div id="offline-banner" role="status" aria-live="polite">
     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
     <span>No internet connection — everything will update once you're back online.</span>
   </div>
