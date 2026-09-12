@@ -10,7 +10,10 @@ if "android.permission.RECORD_AUDIO" in manifest:
     print("microphone permission already injected")
     sys.exit(0)
 
-permission = '    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n'
+permission = (
+    '    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n'
+    '    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n'
+)
 
 manifest, count = re.subn(
     r"(<application[^>]*>)",
