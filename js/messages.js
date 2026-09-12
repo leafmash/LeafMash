@@ -20,7 +20,6 @@ import { triggerPush } from "./push-trigger.js";
 import { uploadAudio } from "./cloudinary.js";
 import { wireVoiceRecorder, voiceBubbleHtml, wireVoicePlayback } from "./voice-recorder.js";
 
-const subtabBtns = document.querySelectorAll(".msg-subtab-btn");
 const subtabPanels = document.querySelectorAll(".msg-subtab-panel");
 
 const classChatList = document.getElementById("class-chat-list");
@@ -32,8 +31,9 @@ const classChatVoiceBar = document.getElementById("class-chat-voice-bar");
 const classChatOnlineCount = document.getElementById("class-chat-online-count");
 
 const dmListEl = document.getElementById("dm-conversation-list");
-const dmTabBadge = document.getElementById("dm-total-unread-badge");
-const classChatTabBadge = document.getElementById("class-chat-unread-badge");
+function classChatTabBadge() {
+  return document.getElementById("class-chat-unread-badge");
+}
 const navTotalBadges = [
   document.getElementById("msg-nav-badge-bottom"),
   document.getElementById("msg-nav-badge-sidebar")
@@ -121,25 +121,23 @@ export async function setDmBlocked(otherUid, blocked) {
 }
 
 export function isClassChatSubtabActive() {
-  return document.querySelector(".msg-subtab-btn.active")?.dataset.msgtab === "class";
+  return document.querySelector('.msg-subtab-panel[data-msgtab-panel="class"]')?.classList.contains("active");
 }
 
 function syncMessageChatMode() {
   document.getElementById("app-shell")?.classList.toggle("chat-mode", isClassChatSubtabActive());
 }
 
+function activateSubtab(name) {
+  document.querySelectorAll(".msg-subtab-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.msgtab === name);
+  });
+  subtabPanels.forEach(p => p.classList.toggle("active", p.dataset.msgtabPanel === name));
+  syncMessageChatMode();
+  if (name === "class") markClassChatRead();
+}
+
 function wireSubtabs() {
-  function activateSubtab(name) {
-    subtabBtns.forEach(b => {
-      const active = b.dataset.msgtab === name;
-      b.classList.toggle("active", active);
-      b.setAttribute("aria-selected", String(active));
-    });
-    subtabPanels.forEach(p => p.classList.toggle("active", p.dataset.msgtabPanel === name));
-    syncMessageChatMode();
-    if (name === "class") markClassChatRead();
-  }
-  subtabBtns.forEach(btn => btn.addEventListener("click", () => activateSubtab(btn.dataset.msgtab)));
   document.getElementById("class-chat-back-btn")?.addEventListener("click", () => activateSubtab("dm"));
 }
 
@@ -509,9 +507,10 @@ function classChatUnreadCount() {
 
 function paintClassChatBadge() {
   const count = classChatUnreadCount();
-  if (classChatTabBadge) {
-    classChatTabBadge.textContent = count > 99 ? "99+" : String(count);
-    classChatTabBadge.classList.toggle("hidden", count === 0);
+  const badge = classChatTabBadge();
+  if (badge) {
+    badge.textContent = count > 99 ? "99+" : String(count);
+    badge.classList.toggle("hidden", count === 0);
   }
   paintNavTotalBadge();
 }
@@ -642,24 +641,42 @@ function isConversationUnread(c, myUid) {
 function paintTotalUnreadBadges() {
   const myUid = auth.currentUser?.uid;
   dmUnreadTotal = allConversations.filter(c => isConversationUnread(c, myUid)).length;
-  if (dmTabBadge) {
-    dmTabBadge.textContent = dmUnreadTotal > 99 ? "99+" : String(dmUnreadTotal);
-    dmTabBadge.classList.toggle("hidden", dmUnreadTotal === 0);
-  }
   paintNavTotalBadge();
+}
+
+const DEPT_CHAT_PIN_CARD_HTML = `
+  <button type="button" class="msg-subtab-btn dept-chat-pin-card" data-msgtab="class" aria-label="Open Department Chat">
+    <span class="chat-header-class-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </span>
+    <span class="dept-chat-pin-info">
+      <strong>Department Chat <span class="chat-header-class-tag">Everyone</span></strong>
+      <span class="dept-chat-pin-sub">Chat with your whole department</span>
+    </span>
+    <span id="class-chat-unread-badge" class="msg-tab-badge hidden">0</span>
+  </button>`;
+
+function wireDeptChatPinCard() {
+  dmListEl.querySelectorAll(".dept-chat-pin-card").forEach(btn => {
+    if (btn.dataset.wired) return;
+    btn.dataset.wired = "1";
+    btn.addEventListener("click", () => activateSubtab("class"));
+  });
 }
 
 function renderConversationList() {
   if (!dmListEl) return;
   const myUid = auth.currentUser?.uid;
   if (!allConversations.length) {
-    dmListEl.innerHTML = `<p class="empty-state">No conversations yet — message a classmate from the Directory.</p>`;
+    dmListEl.innerHTML = DEPT_CHAT_PIN_CARD_HTML + `<p class="empty-state">No conversations yet — message a classmate from the Directory.</p>`;
+    paintClassChatBadge();
+    wireDeptChatPinCard();
     return;
   }
   const sorted = [...allConversations].sort((a, b) =>
     (b.lastMessageAt?.toDate?.().getTime() || 0) - (a.lastMessageAt?.toDate?.().getTime() || 0));
 
-  dmListEl.innerHTML = sorted.map((c) => {
+  dmListEl.innerHTML = DEPT_CHAT_PIN_CARD_HTML + sorted.map((c) => {
     const uid = otherParticipant(c);
     if (!uid) return "";
     ensureProfileLoaded(uid);
@@ -689,6 +706,8 @@ function renderConversationList() {
   dmListEl.querySelectorAll(".dm-conv-row").forEach(row => {
     row.addEventListener("click", () => openDmThread(row.dataset.uid));
   });
+  paintClassChatBadge();
+  wireDeptChatPinCard();
   paintPresenceUI();
 }
 
