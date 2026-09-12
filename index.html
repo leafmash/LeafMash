@@ -43,31 +43,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
 
-<style>
-#offline-banner {
-  position: fixed; left: 0; right: 0; z-index: 250;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  color: #fff; font-size: .8rem; font-weight: 600; text-align: center;
-  top: env(safe-area-inset-top, 0px);
-  padding: 10px 16px;
-  background: linear-gradient(120deg, #a24b23, #8a3d1a);
-  box-shadow: 0 4px 14px rgba(0,0,0,.18);
-  transform: translateY(-150%);
-  opacity: 0;
-  transition: transform .3s ease, opacity .15s ease, top .2s ease;
-}
-#offline-banner svg { flex-shrink: 0; }
-#offline-banner.show { transform: translateY(0); opacity: 1; }
-body:has(#app-shell:not(.hidden):not(.chat-mode)) #offline-banner {
-  top: calc(58px + env(safe-area-inset-top, 0px));
-}
-@media (min-width: 900px) {
-  body:has(#app-shell:not(.hidden):not(.chat-mode)) #offline-banner { top: calc(64px + env(safe-area-inset-top, 0px)); }
-}
-.is-native-android body:has(#app-shell:not(.hidden):not(.chat-mode)) #offline-banner {
-  top: calc(58px + env(safe-area-inset-top, 0px) + 28px);
-}
-</style>
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <style type="text/tailwindcss">
 
@@ -692,22 +667,18 @@ body:has(#app-shell:not(.hidden):not(.chat-mode)) #offline-banner {
     .dm-thread-route { height:100dvh; }
   }
 
-  .msg-subtabs {
-    @apply flex shrink-0 gap-1; padding:5px; margin:12px 14px 10px;
-    background: var(--color-paper-deep); border-radius:999px; border:1px solid var(--color-line);
+  .dept-chat-pin-card {
+    @apply w-full flex items-center gap-3 text-left rounded-2xl transition-all shrink-0;
+    padding:12px 13px; border:1px solid var(--color-forest-200);
+    background: linear-gradient(135deg, var(--color-forest-50), var(--color-surface));
+    box-shadow: var(--shadow-card);
   }
-  @media (min-width:900px) {
-    .msg-subtabs { padding:5px; margin:14px 16px 12px; gap:1px; }
-  }
-  .msg-subtab-btn {
-    @apply relative flex-1 flex items-center justify-center gap-1.5 text-sm font-extrabold rounded-full transition-colors;
-    padding:10px 10px; color: var(--color-ink-soft); background:transparent; border:none;
-    line-height:1.2;
-  }
-  .msg-subtab-btn.active { @apply text-white; background: linear-gradient(135deg, var(--color-forest-600), var(--color-forest-800)); box-shadow: var(--shadow-btn); }
-  @media (min-width:900px) { .msg-subtab-btn { flex:0 0 auto; padding:9px 18px; } }
-  .msg-subtab-icon { @apply shrink-0; }
-  .msg-subtab-label { @apply min-w-0 overflow-hidden whitespace-nowrap text-ellipsis; }
+  .dept-chat-pin-card:active { transform:scale(.985); }
+  @media (hover:hover) { .dept-chat-pin-card:hover { box-shadow: var(--shadow-cardhover); border-color: var(--color-forest-300); transform:translateY(-1px); } }
+  .dept-chat-pin-card .chat-header-class-icon { width:42px; height:42px; }
+  .dept-chat-pin-info { @apply flex-1 min-w-0; }
+  .dept-chat-pin-info strong { @apply block text-[.92rem] font-extrabold tracking-tight; }
+  .dept-chat-pin-sub { @apply block text-[.78rem] font-medium; color: var(--color-ink-faint); margin-top:2px; }
   .msg-tab-badge {
     @apply inline-flex items-center justify-center text-white font-extrabold rounded-full shrink-0;
     min-width:17px; height:17px; font-size:.62rem; padding:0 4px;
@@ -1927,12 +1898,26 @@ body:has(#app-shell:not(.hidden):not(.chat-mode)) #offline-banner {
   .char-counter-warn { color: var(--color-clay-600); }
   .comment-char-counter { margin-top:-6px; padding-right:44px; }
 
+  .offline-banner {
+    @apply fixed left-0 right-0 z-[250] flex items-center justify-center gap-2 text-white text-[.8rem] font-semibold text-center;
+    top: calc(58px + env(safe-area-inset-top, 0px));
+    padding:10px 16px;
+    background: linear-gradient(120deg, var(--color-clay-600), #8a3d1a);
+    box-shadow: 0 4px 14px rgba(0,0,0,.18);
+    transform: translateY(-150%); transition: transform .3s ease;
+  }
+  .offline-banner svg { @apply shrink-0; }
+  .offline-banner.show { transform: translateY(0); }
+  @media (min-width:900px) {
+    .offline-banner { top: calc(64px + env(safe-area-inset-top, 0px)); }
+  }
+  .is-native-android .offline-banner { top: calc(58px + env(safe-area-inset-top, 0px) + 28px); }
 }
 </style>
 </head>
 <body>
 
-  <div id="offline-banner" role="status" aria-live="polite">
+  <div id="offline-banner" class="offline-banner" role="status" aria-live="polite">
     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
     <span>No internet connection — everything will update once you're back online.</span>
   </div>
@@ -2289,20 +2274,9 @@ body:has(#app-shell:not(.hidden):not(.chat-mode)) #offline-banner {
       </section>
 
       <section id="section-message" class="route-section msg-route">
-        <div class="msg-subtabs" role="tablist">
-          <button type="button" class="msg-subtab-btn active" data-msgtab="dm" role="tab" aria-selected="true" id="msg-subtab-dm">
-            <svg class="msg-subtab-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3.4"/><path d="M2.5 20v-1.2A5.3 5.3 0 0 1 7.8 13.5h2.4"/><path d="M14 15.5l2.7 2.7 4.3-4.7"/></svg>
-            <span class="msg-subtab-label">Private Messages</span> <span id="dm-total-unread-badge" class="msg-tab-badge hidden">0</span>
-          </button>
-          <button type="button" class="msg-subtab-btn" data-msgtab="class" role="tab" aria-selected="false" id="msg-subtab-class">
-            <svg class="msg-subtab-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l1.4-3.7A7.6 7.6 0 1 1 8 19.4z"/></svg>
-            <span class="msg-subtab-label">Department Chat</span> <span id="class-chat-unread-badge" class="msg-tab-badge hidden">0</span>
-          </button>
-        </div>
-
         <div class="msg-subtab-panel active" data-msgtab-panel="dm">
           <div id="dm-conversation-list" class="dm-list-wrap">
-            <p class="empty-state">No conversations yet — message a classmate from the Directory.</p>
+            <p class="empty-state">Loading conversations…</p>
           </div>
         </div>
 
