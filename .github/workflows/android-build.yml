@@ -63,6 +63,9 @@ jobs:
       - name: Inject battery optimization permission
         run: python3 scripts/ci/inject-battery-permission.py
 
+      - name: Inject microphone permission
+        run: python3 scripts/ci/inject-microphone-permission.py
+
       - name: Add google-services.json
         run: echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > android/app/google-services.json
 
