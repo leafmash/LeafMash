@@ -77,12 +77,43 @@ if (CapSplashScreen) {
 }
 
 const offlineBanner = document.getElementById("offline-banner");
-function updateOfflineBanner() {
-  offlineBanner.classList.toggle("show", !navigator.onLine);
+let offlineBannerRecheckTimer = null;
+
+async function probeConnectivity() {
+  if (!navigator.onLine) return false;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    await fetch(`/favicon.ico?_=${Date.now()}`, {
+      method: "HEAD",
+      cache: "no-store",
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    return true;
+  } catch {
+    return false;
+  }
 }
+
+async function updateOfflineBanner() {
+  const isOnline = await probeConnectivity();
+  offlineBanner.classList.toggle("show", !isOnline);
+
+  if (isOnline && offlineBannerRecheckTimer) {
+    clearInterval(offlineBannerRecheckTimer);
+    offlineBannerRecheckTimer = null;
+  } else if (!isOnline && !offlineBannerRecheckTimer) {
+    offlineBannerRecheckTimer = setInterval(updateOfflineBanner, 5000);
+  }
+}
+
 window.addEventListener("online", updateOfflineBanner);
 window.addEventListener("offline", updateOfflineBanner);
-updateOfflineBanner(); 
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") updateOfflineBanner();
+});
+updateOfflineBanner();
 function setLoadingLabel(text) {
   if (loadingLabel) loadingLabel.textContent = text;
 }
