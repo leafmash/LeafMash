@@ -147,6 +147,51 @@ const CLASS_CHAT_TEXT_LIMIT = 1000;
 let unsubscribeClassChat = null;
 let classChatAtBottom = true; 
 let classChatMessages = [];
+let classChatPendingSends = [];
+
+function currentClassChatDisplayMessages() {
+  const myUid = auth.currentUser?.uid;
+  const pending = classChatPendingSends.map(p => ({
+    id: p.clientId,
+    authorUid: myUid,
+    authorName: currentProfile?.name || auth.currentUser?.email,
+    audioUrl: p.audioUrl,
+    localAudioUrl: p.localAudioUrl,
+    audioDurationSec: p.audioDurationSec,
+    createdAt: { toDate: () => new Date(p.ts) },
+    pending: true,
+    sendStatus: p.status
+  }));
+  return [...classChatMessages, ...pending];
+}
+
+function reconcileClassChatPending(msgs) {
+  const usedRealIds = new Set();
+  classChatPendingSends = classChatPendingSends.filter((p) => {
+    if (p.realId && msgs.some(m => m.id === p.realId)) {
+      if (p.localAudioUrl) URL.revokeObjectURL(p.localAudioUrl);
+      return false;
+    }
+    const match = msgs.find(m =>
+      !usedRealIds.has(m.id) && m.authorUid === p.authorUid && !!m.audioUrl &&
+      m.audioDurationSec === p.audioDurationSec &&
+      (m.createdAt?.toMillis?.() || 0) >= p.ts - 5000
+    );
+    if (match) {
+      usedRealIds.add(match.id);
+      if (p.localAudioUrl) URL.revokeObjectURL(p.localAudioUrl);
+      return false;
+    }
+    return true;
+  });
+}
+
+function renderClassChatFromState({ stickToBottom = false } = {}) {
+  const wasNearBottom = stickToBottom || classChatAtBottom || classChatList.dataset.everLoaded !== "1";
+  renderChatBubbles(classChatList, currentClassChatDisplayMessages(), { emptyText: "No messages yet — say hello to the department!" });
+  classChatList.dataset.everLoaded = "1";
+  if (wasNearBottom) classChatList.scrollTop = classChatList.scrollHeight;
+}
 let classChatLastReadMs = 0;
 let unsubscribeClassChatRead = null;
 let dmUnreadTotal = 0;
@@ -208,7 +253,7 @@ function buildBubbleRowEl(ctx) {
   const { m, uid, mine, profile, grouped, showAvatar, showNames, isNew, canDelete, timeLabel } = ctx;
   const row = document.createElement("div");
   row.className = `chat-bubble-row${mine ? " mine" : ""}${isNew ? " msg-enter" : ""}`;
-  const isVoice = !!m.audioUrl;
+  const isVoice = !!(m.audioUrl || m.localAudioUrl);
   row.dataset.rowKey = m.id;
   row.dataset.msgId = m.id;
   row.dataset.canDelete = canDelete ? "1" : "0";
@@ -495,12 +540,10 @@ function subscribeClassChat() {
   if (unsubscribeClassChat) return;
   const q = query(collection(db, "classChat"), orderBy("createdAt", "asc"), limitToLast(150));
   unsubscribeClassChat = onSnapshotWithRetry(q, (snap) => {
-    const wasNearBottom = classChatAtBottom || classChatList.dataset.everLoaded !== "1";
     const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     classChatMessages = msgs;
-    renderChatBubbles(classChatList, msgs, { emptyText: "No messages yet — say hello to the department!" });
-    classChatList.dataset.everLoaded = "1";
-    if (wasNearBottom) classChatList.scrollTop = classChatList.scrollHeight;
+    reconcileClassChatPending(msgs);
+    renderClassChatFromState({ stickToBottom: classChatAtBottom || classChatList.dataset.everLoaded !== "1" });
     if (isClassChatSubtabActive()) markClassChatRead();
     else paintClassChatBadge();
   }, (err) => {
@@ -511,6 +554,15 @@ function subscribeClassChat() {
 }
 
 async function submitClassChatVoice(blob, durationSec) {
+  const clientId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const localAudioUrl = URL.createObjectURL(blob);
+  classChatPendingSends.push({
+    clientId, authorUid: auth.currentUser.uid, localAudioUrl,
+    audioDurationSec: durationSec, ts: Date.now(), status: "sending"
+  });
+  classChatAtBottom = true;
+  renderClassChatFromState({ stickToBottom: true });
+
   try {
     const audioUrl = await uploadAudio(blob, { folder: "leafmash/voice" });
     const msgRef = await addDoc(collection(db, "classChat"), {
@@ -520,6 +572,13 @@ async function submitClassChatVoice(blob, durationSec) {
       audioDurationSec: durationSec,
       createdAt: serverTimestamp()
     });
+    const pending = classChatPendingSends.find(p => p.clientId === clientId);
+    if (pending) {
+      pending.status = "sent";
+      pending.realId = msgRef.id;
+      pending.audioUrl = audioUrl;
+      renderClassChatFromState();
+    }
     triggerPush({
       type: "classChat",
       text: "🎤 Voice message",
@@ -527,6 +586,9 @@ async function submitClassChatVoice(blob, durationSec) {
       messageId: msgRef.id
     });
   } catch (err) {
+    classChatPendingSends = classChatPendingSends.filter(p => p.clientId !== clientId);
+    URL.revokeObjectURL(localAudioUrl);
+    renderClassChatFromState();
     const { message, technical } = friendlyError(err, "Couldn't send that voice message.");
     showToast(message, { details: technical });
   }
@@ -741,17 +803,22 @@ function reconcilePendingWithMessages(conversationId, msgs) {
   dmPendingSends = dmPendingSends.filter((p) => {
     if (p.conversationId !== conversationId) return true;
     if (p.realId && msgs.some(m => m.id === p.realId)) {
-      relabelPendingRow(p.clientId, p.realId);
+      if (p.kind !== "voice") relabelPendingRow(p.clientId, p.realId);
+      if (p.localAudioUrl) URL.revokeObjectURL(p.localAudioUrl);
       matchedRealIds.push(p.realId);
       return false;
     }
-    const match = msgs.find(m =>
-      !usedRealIds.has(m.id) && m.senderUid === myUid && m.text === p.text &&
-      (m.createdAt?.toMillis?.() || 0) >= p.ts - 5000
-    );
+    const match = msgs.find(m => {
+      if (usedRealIds.has(m.id) || m.senderUid !== myUid) return false;
+      if ((m.createdAt?.toMillis?.() || 0) < p.ts - 5000) return false;
+      return p.kind === "voice"
+        ? !!m.audioUrl && m.audioDurationSec === p.audioDurationSec
+        : m.text === p.text;
+    });
     if (match) {
       usedRealIds.add(match.id);
-      relabelPendingRow(p.clientId, match.id);
+      if (p.kind !== "voice") relabelPendingRow(p.clientId, match.id);
+      if (p.localAudioUrl) URL.revokeObjectURL(p.localAudioUrl);
       matchedRealIds.push(match.id);
       return false;
     }
@@ -769,6 +836,9 @@ function currentDmDisplayMessages(conversationId) {
       id: p.clientId,
       senderUid: myUid,
       text: p.text,
+      audioUrl: p.audioUrl,
+      localAudioUrl: p.localAudioUrl,
+      audioDurationSec: p.audioDurationSec,
       createdAt: { toDate: () => new Date(p.ts) },
       pending: true,
       sendStatus: p.status
@@ -966,10 +1036,30 @@ async function submitDmVoice(blob, durationSec) {
   const conversationId = currentDmConversationId;
   const otherUid = currentDmUid;
   if (!conversationId || !otherUid) return;
+
+  const clientId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const localAudioUrl = URL.createObjectURL(blob);
+  dmPendingSends.push({
+    clientId, conversationId, kind: "voice", localAudioUrl,
+    audioDurationSec: durationSec, ts: Date.now(), status: "sending"
+  });
+  dmThreadAtBottom = true;
+  renderDmThreadFromState(conversationId, { stickToBottom: true });
+
   try {
     const audioUrl = await uploadAudio(blob, { folder: "leafmash/voice" });
-    await callApi("send-dm-message", { targetUid: otherUid, audioUrl, audioDurationSec: durationSec });
+    const { messageId } = await callApi("send-dm-message", { targetUid: otherUid, audioUrl, audioDurationSec: durationSec });
+    const pending = dmPendingSends.find(p => p.clientId === clientId);
+    if (pending) {
+      pending.status = "sent";
+      pending.realId = messageId;
+      pending.audioUrl = audioUrl;
+      renderDmThreadFromState(conversationId);
+    }
   } catch (err) {
+    dmPendingSends = dmPendingSends.filter(p => p.clientId !== clientId);
+    URL.revokeObjectURL(localAudioUrl);
+    renderDmThreadFromState(conversationId);
     const { message, technical } = friendlyError(err, "Couldn't send that voice message.");
     showToast(message, { details: technical });
   }

@@ -108,11 +108,10 @@ export function wireVoiceRecorder({ bar, micBtn, form, folder, onSend }) {
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          channelCount: 1,
-          sampleRate: 48000
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+          channelCount: 1
         }
       });
     } catch {
@@ -122,7 +121,7 @@ export function wireVoiceRecorder({ bar, micBtn, form, folder, onSend }) {
     cancelled = false;
     chunks = [];
     const mimeType = pickMimeType();
-    const recorderOptions = { audioBitsPerSecond: 128000 };
+    const recorderOptions = { audioBitsPerSecond: 160000 };
     if (mimeType) recorderOptions.mimeType = mimeType;
     mediaRecorder = new MediaRecorder(mediaStream, recorderOptions);
     mediaRecorder.addEventListener("dataavailable", (e) => { if (e.data.size) chunks.push(e.data); });
@@ -182,8 +181,9 @@ export function wireVoiceRecorder({ bar, micBtn, form, folder, onSend }) {
 
 export function voiceBubbleHtml(m) {
   const dur = Number(m.audioDurationSec) || 0;
+  const src = m.audioUrl || m.localAudioUrl || "";
   return `
-    <div class="voice-msg-player" data-voice-src="${escapeAttr(m.audioUrl)}">
+    <div class="voice-msg-player" data-voice-src="${escapeAttr(src)}">
       <button type="button" class="voice-msg-play-btn" aria-label="Play voice message">${playIconSvg()}</button>
       <div class="voice-msg-track"><div class="voice-msg-progress"></div></div>
       <span class="voice-msg-time">${formatClock(dur)}</span>

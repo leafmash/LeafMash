@@ -121,6 +121,17 @@ export function wirePostImageViewer(root) {
   });
 }
 
+let activeImageViewerOverlay = null;
+
+export function isImageViewerOpen() {
+  return !!activeImageViewerOverlay;
+}
+
+export function closeImageViewer() {
+  activeImageViewerOverlay?.remove();
+  activeImageViewerOverlay = null;
+}
+
 export function openImageViewer(url) {
   const overlay = document.createElement("div");
   overlay.className = "image-viewer-overlay";
@@ -130,6 +141,6 @@ export function openImageViewer(url) {
     </button>
     <img src="${escapeAttr(url)}" alt="" />`;
   document.body.appendChild(overlay);
-  const close = () => overlay.remove();
-  overlay.addEventListener("click", (e) => { if (e.target === overlay || e.target.closest(".image-viewer-close")) close(); });
+  activeImageViewerOverlay = overlay;
+  overlay.addEventListener("click", (e) => { if (e.target === overlay || e.target.closest(".image-viewer-close")) closeImageViewer(); });
 }

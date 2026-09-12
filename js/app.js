@@ -26,7 +26,7 @@ import {
   avatarInner, nameWithBadge, isAdminEmail, adminBadgeHtml, friendlyError, socialLinksRowHtml, normalizedSocialLinks
 } from "./ui-utils.js";
 import { uploadImage } from "./cloudinary.js";
-import { isAcceptableImageFile, openImageViewer } from "./media-picker.js";
+import { isAcceptableImageFile, openImageViewer, isImageViewerOpen, closeImageViewer } from "./media-picker.js";
 import { openImageCropper } from "./image-cropper.js";
 import { initPush, unregisterPushToken, registerNotificationTapHandler, consumeNativePendingDeepLink } from "./push.js";
 import { initBatteryOptimizationPrompt } from "./battery-optimization.js";
@@ -504,6 +504,10 @@ let webBufferPushed = false;
 
 if (CapApp) {
   CapApp.addListener("backButton", ({ canGoBack }) => {
+    if (isImageViewerOpen()) {
+      closeImageViewer();
+      return;
+    }
     if (!document.getElementById("modal-overlay").classList.contains("hidden")) {
       history.back();
       return;
