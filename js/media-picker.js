@@ -132,15 +132,47 @@ export function closeImageViewer() {
   activeImageViewerOverlay = null;
 }
 
+async function downloadViewerImage(url, btn) {
+  btn.classList.add("is-loading");
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    if (!res.ok) throw new Error("fetch failed");
+    const blob = await res.blob();
+    const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = `leafmash-photo-${Date.now()}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(blobUrl);
+  } catch (err) {
+    window.open(url, "_blank");
+    showToast("Couldn't save directly — opened in a new tab instead.");
+  } finally {
+    btn.classList.remove("is-loading");
+  }
+}
+
 export function openImageViewer(url) {
   const overlay = document.createElement("div");
   overlay.className = "image-viewer-overlay";
   overlay.innerHTML = `
-    <button type="button" class="image-viewer-close" aria-label="Close">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
-    </button>
+    <div class="image-viewer-actions">
+      <button type="button" class="image-viewer-save" aria-label="Save photo">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+      <button type="button" class="image-viewer-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      </button>
+    </div>
     <img src="${escapeAttr(url)}" alt="" />`;
   document.body.appendChild(overlay);
   activeImageViewerOverlay = overlay;
   overlay.addEventListener("click", (e) => { if (e.target === overlay || e.target.closest(".image-viewer-close")) closeImageViewer(); });
+  overlay.querySelector(".image-viewer-save")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    downloadViewerImage(url, e.currentTarget);
+  });
 }

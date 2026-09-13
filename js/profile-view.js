@@ -10,6 +10,7 @@ import { loadUserResources } from "./resources.js";
 import { renderPost } from "./wall.js";
 import { avatarPresenceDotHtml } from "./presence.js";
 import { openDmThread, getBlockState, setDmBlocked } from "./messages.js";
+import { openImageViewer } from "./media-picker.js";
 
 const cardEl = document.getElementById("user-profile-card");
 
@@ -101,7 +102,7 @@ function renderProfilePage(profile, uid) {
       <div class="profile-flow-banner" aria-hidden="true"></div>
       <div class="profile-flow-head">
         <div class="profile-flow-avatar-wrap">
-          <span class="avatar avatar-lg profile-flow-avatar">${avatarInner(profile)}</span>
+          <span class="avatar avatar-lg profile-flow-avatar${profile.photoURL ? " has-photo" : ""}" ${profile.photoURL ? `data-view-image="${escapeAttr(profile.photoURL)}" role="button" tabindex="0" aria-label="View profile photo"` : ""}>${avatarInner(profile)}</span>
           ${avatarPresenceDotHtml(uid, { label: true })}
         </div>
         <h3>${nameWithBadge(profile.name || "Classmate", profile.email, uid)}</h3>
@@ -163,6 +164,12 @@ function renderProfilePage(profile, uid) {
   `;
 
   cardEl.querySelector("#user-profile-message-btn")?.addEventListener("click", () => openDmThread(uid));
+  cardEl.querySelector(".profile-flow-avatar[data-view-image]")?.addEventListener("click", (e) => {
+    openImageViewer(e.currentTarget.dataset.viewImage);
+  });
+  cardEl.querySelector(".profile-flow-avatar[data-view-image]")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openImageViewer(e.currentTarget.dataset.viewImage); }
+  });
   cardEl.querySelector("#user-profile-call-locked-btn")?.addEventListener("click", () => {
     showToast("This student has hidden their contact number.");
   });
