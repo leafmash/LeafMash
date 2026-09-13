@@ -39,6 +39,7 @@ export async function updateProfile(req, res) {
     const bio = optionalText(body.bio, "Bio", 150);
     const hidePhone = !!body.hidePhone;
     const hideEmail = !!body.hideEmail;
+    const photoGuard = !!body.photoGuard;
     let photoURL;
     if (body.photoURL !== undefined && body.photoURL !== "") {
       if (!isOwnCloudinaryUrl(body.photoURL, "leafmash/avatars")) throw new ApiError(400, "Invalid profile photo.");
@@ -61,6 +62,7 @@ export async function updateProfile(req, res) {
         profileIncomplete: false,
         hidePhone,
         hideEmail,
+        photoGuard,
         ...mirror
       };
       if (body.session !== undefined) updates.session = session;
