@@ -27,6 +27,7 @@ class MainActivity : BridgeActivity() {
         registerPlugin(DeepLinkPlugin::class.java)
         registerPlugin(BatteryOptimizationPlugin::class.java)
         registerPlugin(AppUpdaterPlugin::class.java)
+        registerPlugin(ScreenGuardPlugin::class.java)
         super.onCreate(savedInstanceState)
         capturePendingDeepLink(intent)
         setupMicPermissionHandling()
