@@ -931,6 +931,11 @@ function openProfileDetailsModal(isFirstTime = false) {
         <input type="checkbox" id="pd-hide-email" ${currentProfile.hideEmail ? "checked" : ""} />
         <span class="switch-track"><span class="switch-thumb"></span></span>
       </label>
+      <label class="switch-row">
+        <span>Profile photo guard<br><small>Others can't screenshot or download your profile photo. Turn this off to allow it, like before.</small></span>
+        <input type="checkbox" id="pd-photo-guard" ${currentProfile.photoGuard ? "checked" : ""} />
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+      </label>
     </div>
 
     <p id="pd-error" class="form-error"></p>
@@ -1004,6 +1009,7 @@ async function saveProfileDetails(isFirstTime, getSelectedPhotoFile) {
   const bio = document.getElementById("pd-bio").value;
   const hidePhone = document.getElementById("pd-hide-phone").checked;
   const hideEmail = document.getElementById("pd-hide-email").checked;
+  const photoGuard = document.getElementById("pd-photo-guard").checked;
   const errorEl = document.getElementById("pd-error");
 
   if (!name || !roll || !blood || !phone || !gender) {
@@ -1020,7 +1026,7 @@ async function saveProfileDetails(isFirstTime, getSelectedPhotoFile) {
       photoURL = await uploadImage(selectedPhotoFile, { maxDim: 600, quality: 0.85, folder: "leafmash/avatars" });
       setBtnLoading(btn, true, "Saving…");
     }
-    await updateProfileDetails({ name, roll, blood, gender, phone, year, session, hometown, address, socialLinks, bio, hidePhone, hideEmail, photoURL });
+    await updateProfileDetails({ name, roll, blood, gender, phone, year, session, hometown, address, socialLinks, bio, hidePhone, hideEmail, photoGuard, photoURL });
     closeModal({ force: true }); 
     showToast(isFirstTime ? "Profile complete — welcome aboard!" : "Profile updated.");
     if (!document.getElementById("section-profile").classList.contains("hidden")) renderProfile();

@@ -165,10 +165,10 @@ function renderProfilePage(profile, uid) {
 
   cardEl.querySelector("#user-profile-message-btn")?.addEventListener("click", () => openDmThread(uid));
   cardEl.querySelector(".profile-flow-avatar[data-view-image]")?.addEventListener("click", (e) => {
-    openImageViewer(e.currentTarget.dataset.viewImage);
+    openImageViewer(e.currentTarget.dataset.viewImage, { allowDownload: !profile.photoGuard, guard: !!profile.photoGuard });
   });
   cardEl.querySelector(".profile-flow-avatar[data-view-image]")?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openImageViewer(e.currentTarget.dataset.viewImage); }
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openImageViewer(e.currentTarget.dataset.viewImage, { allowDownload: !profile.photoGuard, guard: !!profile.photoGuard }); }
   });
   cardEl.querySelector("#user-profile-call-locked-btn")?.addEventListener("click", () => {
     showToast("This student has hidden their contact number.");

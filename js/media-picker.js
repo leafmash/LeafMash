@@ -1,4 +1,5 @@
 import { escapeHtml, escapeAttr, showToast } from "./ui-utils.js";
+import { pushScreenGuard, popScreenGuard } from "./screen-guard.js";
 
 const MAX_RAW_FILE_BYTES = 15 * 1024 * 1024;
 export function isAcceptableImageFile(file) {
@@ -122,15 +123,38 @@ export function wirePostImageViewer(root) {
 }
 
 let activeImageViewerOverlay = null;
+let imageViewerHistoryPushed = false;
+let activeViewerGuarded = false;
 
 export function isImageViewerOpen() {
   return !!activeImageViewerOverlay;
 }
 
-export function closeImageViewer() {
+function removeImageViewerOverlay() {
   activeImageViewerOverlay?.remove();
   activeImageViewerOverlay = null;
+  if (activeViewerGuarded) {
+    activeViewerGuarded = false;
+    popScreenGuard();
+  }
 }
+
+export function closeImageViewer() {
+  if (!activeImageViewerOverlay) return;
+  if (imageViewerHistoryPushed) {
+    imageViewerHistoryPushed = false;
+    history.back();
+  } else {
+    removeImageViewerOverlay();
+  }
+}
+
+window.addEventListener("popstate", (e) => {
+  if (imageViewerHistoryPushed && !(e.state && e.state.imageViewerOpen)) {
+    imageViewerHistoryPushed = false;
+    removeImageViewerOverlay();
+  }
+});
 
 async function downloadViewerImage(url, btn) {
   btn.classList.add("is-loading");
@@ -155,21 +179,33 @@ async function downloadViewerImage(url, btn) {
   }
 }
 
-export function openImageViewer(url) {
+export function openImageViewer(url, { allowDownload = true, guard = false } = {}) {
+  const canDownload = allowDownload && !guard;
   const overlay = document.createElement("div");
-  overlay.className = "image-viewer-overlay";
+  overlay.className = `image-viewer-overlay${guard ? " is-guarded" : ""}`;
   overlay.innerHTML = `
     <div class="image-viewer-actions">
+      ${canDownload ? `
       <button type="button" class="image-viewer-save" aria-label="Save photo">
         <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      </button>
+      </button>` : ""}
       <button type="button" class="image-viewer-close" aria-label="Close">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
       </button>
     </div>
-    <img src="${escapeAttr(url)}" alt="" />`;
+    <img src="${escapeAttr(url)}" alt="" draggable="false" />`;
   document.body.appendChild(overlay);
   activeImageViewerOverlay = overlay;
+  activeViewerGuarded = guard;
+  if (guard) {
+    pushScreenGuard();
+    const img = overlay.querySelector("img");
+    img.addEventListener("contextmenu", (e) => e.preventDefault());
+    img.addEventListener("dragstart", (e) => e.preventDefault());
+    overlay.addEventListener("contextmenu", (e) => e.preventDefault());
+  }
+  history.pushState({ ...(history.state || {}), imageViewerOpen: true }, "", location.hash);
+  imageViewerHistoryPushed = true;
   overlay.addEventListener("click", (e) => { if (e.target === overlay || e.target.closest(".image-viewer-close")) closeImageViewer(); });
   overlay.querySelector(".image-viewer-save")?.addEventListener("click", (e) => {
     e.stopPropagation();
