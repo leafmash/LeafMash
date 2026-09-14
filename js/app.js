@@ -70,10 +70,7 @@ const authScreen = document.getElementById("auth-screen");
 const appShell = document.getElementById("app-shell");
 
 if (CapSplashScreen) {
-  await checkForcedUpdate().catch(() => {});
   CapSplashScreen.hide({ fadeOutDuration: 300 }).catch(() => {});
-} else {
-  checkForcedUpdate().catch(() => {});
 }
 
 const offlineBanner = document.getElementById("offline-banner");
@@ -1045,6 +1042,7 @@ if ("serviceWorker" in navigator) {
 }
 
 isColdStart = await resetCacheOnColdStart();
+checkForcedUpdate().catch(() => {});
 
 watchAuthState(
   async (user, profile) => {

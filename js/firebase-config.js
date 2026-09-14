@@ -28,7 +28,10 @@ const SESSION_MARKER_KEY = "leafmash_session_established";
 export async function resetCacheOnColdStart() {
   if (localStorage.getItem(SESSION_MARKER_KEY)) return false;
   try {
-    await clearIndexedDbPersistence(db);
+    await Promise.race([
+      clearIndexedDbPersistence(db),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("clear-timeout")), 3000))
+    ]);
   } catch {
   }
   return true;
@@ -43,11 +46,7 @@ export const VAPID_KEY = "BD9lAKJwaHRwTaSMqD6sYWs40rfsEhUW0rxuyZtOgBsWm4jhdAgMCS
 export const DEPARTMENT_NAME = "Geography & Environment";
 export const COLLEGE_NAME = "Govt. Michael Madhusudan College, Jessore";
 
-// Re-exported from the single shared source of truth — see
-// /shared/resource-categories.js (also used by the serverless API routes).
 export { RESOURCE_CATEGORIES } from "../shared/resource-categories.js";
 
-// Re-exported from the single shared source of truth — see
-// /shared/admin-config.js (also used by the serverless API routes).
 export { ADMIN_EMAILS, ADMIN_NAME } from "../shared/admin-config.js";
 export { VERIFIED_EMAILS, VERIFIED_NAME } from "../shared/admin-config.js";
