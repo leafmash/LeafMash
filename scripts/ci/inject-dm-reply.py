@@ -120,6 +120,8 @@ components = (
     '        </service>\n'
     '        <receiver android:name=".DmReplyReceiver" android:exported="false" />\n'
     '        <receiver android:name=".DmNotificationDismissReceiver" android:exported="false" />\n'
+    '        <receiver android:name=".GroupChatReplyReceiver" android:exported="false" />\n'
+    '        <receiver android:name=".GroupChatNotificationDismissReceiver" android:exported="false" />\n'
 )
 
 manifest = manifest.replace("</application>", components + "    </application>", 1)
