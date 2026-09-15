@@ -49,9 +49,8 @@ async function collectAdminTokens(db, excludeUid) {
   return pairs;
 }
 
-function androidPayloadFor(data) {
-  if (data.type === "dm" || data.type === "classChat") return { priority: "high" };
-  return { priority: "high", notification: { title: data.title, body: data.body } };
+function androidPayloadFor() {
+  return { priority: "high" };
 }
 
 async function sendToTokens(messaging, db, pairs, data = {}) {
