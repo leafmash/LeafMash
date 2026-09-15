@@ -84,7 +84,7 @@ object GroupChatNotificationBuilder {
         val openIntent = Intent(context, MainActivity::class.java).apply {
             putExtra("leafmash_url", url)
             putExtra("leafmash_conversation_id", GroupChatConversationStore.CONVERSATION_ID)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         return PendingIntent.getActivity(
             context,

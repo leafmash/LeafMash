@@ -39,7 +39,15 @@ class DmReplyMessagingService : MessagingService() {
         when (data["type"]) {
             "dm" -> serviceScope.launch { showReplyNotification(context, data) }
             "classChat" -> serviceScope.launch { showGroupChatNotification(context, data) }
+            else -> showGeneralNotification(context, data)
         }
+    }
+
+    private fun showGeneralNotification(context: Context, data: Map<String, String>) {
+        val title = data["title"]?.takeIf { it.isNotBlank() } ?: "LeafMash"
+        val body = data["body"] ?: ""
+        val url = data["url"]?.takeIf { it.isNotBlank() } ?: "/"
+        GeneralNotificationBuilder.buildAndShow(context, title, body, url)
     }
 
     private suspend fun showGroupChatNotification(context: Context, data: Map<String, String>) {
@@ -191,7 +199,7 @@ class DmReplyMessagingService : MessagingService() {
             val openIntent = Intent(context, MainActivity::class.java).apply {
                 putExtra("leafmash_url", url)
                 putExtra("leafmash_conversation_id", conversationId)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             }
             return PendingIntent.getActivity(
                 context,
