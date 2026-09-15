@@ -29,6 +29,13 @@ class DeepLinkPlugin : Plugin() {
     }
 
     @PluginMethod
+    fun clearClassChatNotification(call: PluginCall) {
+        GroupChatConversationStore.clear(context)
+        NotificationManagerCompat.from(context).cancel(GroupChatConversationStore.CONVERSATION_ID.hashCode())
+        call.resolve()
+    }
+
+    @PluginMethod
     fun setActiveConversation(call: PluginCall) {
         val conversationId = call.getString("conversationId")
         if (conversationId == null) {

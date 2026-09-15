@@ -35,9 +35,38 @@ class DmReplyMessagingService : MessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
         val data = remoteMessage.data
-        if (data["type"] != "dm") return
         val context = applicationContext
-        serviceScope.launch { showReplyNotification(context, data) }
+        when (data["type"]) {
+            "dm" -> serviceScope.launch { showReplyNotification(context, data) }
+            "classChat" -> serviceScope.launch { showGroupChatNotification(context, data) }
+        }
+    }
+
+    private suspend fun showGroupChatNotification(context: Context, data: Map<String, String>) {
+        val senderUid = data["senderUid"] ?: return
+        if (senderUid == "leafmash_me") return
+        val senderName = data["senderName"]?.takeIf { it.isNotBlank() } ?: "Someone"
+        val senderPhotoURL = data["senderPhotoURL"] ?: ""
+
+        GroupChatConversationStore.addMessage(
+            context,
+            data["body"] ?: "",
+            fromMe = false,
+            senderUid = senderUid,
+            senderName = senderName,
+            timestamp = System.currentTimeMillis()
+        )
+        if (senderPhotoURL.isNotBlank()) {
+            GroupChatConversationStore.setSenderPhotoUrl(context, senderUid, senderPhotoURL)
+        }
+
+        if (GroupChatConversationStore.CONVERSATION_ID == MainActivity.getActiveConversationId()) {
+            GroupChatConversationStore.resetUnread(context)
+            return
+        }
+
+        GroupChatConversationStore.incrementUnread(context)
+        GroupChatNotificationBuilder.buildAndShow(context, data["url"] ?: "/#message")
     }
 
     private suspend fun showReplyNotification(context: Context, data: Map<String, String>) {

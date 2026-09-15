@@ -78,7 +78,11 @@ class MainActivity : BridgeActivity() {
     private fun clearConversationHistory(intent: Intent?) {
         val conversationId = intent?.getStringExtra("leafmash_conversation_id") ?: return
         intent.removeExtra("leafmash_conversation_id")
-        DmConversationStore.clear(applicationContext, conversationId)
+        if (conversationId == GroupChatConversationStore.CONVERSATION_ID) {
+            GroupChatConversationStore.clear(applicationContext)
+        } else {
+            DmConversationStore.clear(applicationContext, conversationId)
+        }
     }
 
     private fun extractUrl(intent: Intent?): String? {
