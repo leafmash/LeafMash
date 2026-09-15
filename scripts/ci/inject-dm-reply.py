@@ -99,6 +99,14 @@ with open(app_gradle_path, "w") as f:
 with open(manifest_path, "r") as f:
     manifest = f.read()
 
+activity_pattern = re.compile(r'(<activity\s+android:name="\.MainActivity"[^>]*)(>)')
+activity_match = activity_pattern.search(manifest)
+if activity_match and "android:launchMode" not in activity_match.group(1):
+    manifest = activity_pattern.sub(r'\1 android:launchMode="singleTask"\2', manifest, count=1)
+    with open(manifest_path, "w") as f:
+        f.write(manifest)
+    print("MainActivity launchMode set to singleTask")
+
 if "DmReplyMessagingService" in manifest:
     print("dm reply already injected")
     sys.exit(0)
