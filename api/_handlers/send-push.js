@@ -50,7 +50,7 @@ async function collectAdminTokens(db, excludeUid) {
 }
 
 function androidPayloadFor(data) {
-  if (data.type === "dm") return { priority: "high" };
+  if (data.type === "dm" || data.type === "classChat") return { priority: "high" };
   return { priority: "high", notification: { title: data.title, body: data.body } };
 }
 
@@ -367,13 +367,15 @@ export async function sendPush(req, res) {
 
     const url = buildDeepLink(type, { postId, conversationId, callerUid });
     let senderPhotoURL = "";
-    if (type === "dm") {
+    if (type === "dm" || type === "classChat") {
       const callerSnap = await db.collection("users").doc(callerUid).get();
       senderPhotoURL = callerSnap.exists ? (callerSnap.get("photoURL") || "") : "";
     }
     const extra = type === "dm"
       ? { conversationId: String(conversationId), messageId: String(messageId), senderUid: callerUid, senderName: actorName || "", senderPhotoURL }
-      : {};
+      : type === "classChat"
+        ? { messageId: String(messageId), senderUid: callerUid, senderName: actorName || "", senderPhotoURL }
+        : {};
     const result = await sendToTokens(messaging, db, pairs, { url, type: String(type), title, body, ...extra });
     return res.status(200).json({ ok: true, ...result });
   } catch (err) {
