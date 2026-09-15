@@ -12,6 +12,9 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.Person
 import androidx.core.app.RemoteInput
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
 
 object GroupChatNotificationBuilder {
 
@@ -22,15 +25,21 @@ object GroupChatNotificationBuilder {
         val notificationId = GroupChatConversationStore.CONVERSATION_ID.hashCode()
         ensureChannel(context)
 
+        val (style, latestSenderPerson, latestSenderIcon) = buildMessagingStyle(context)
+        if (latestSenderPerson != null) {
+            ensureConversationShortcut(context, latestSenderIcon, latestSenderPerson, url)
+        }
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(DmReplyMessagingService.resolveIcon(context))
-            .setStyle(buildMessagingStyle(context))
+            .setStyle(style)
             .setAutoCancel(true)
             .setContentIntent(buildOpenPendingIntent(context, notificationId, url))
             .setDeleteIntent(buildDeletePendingIntent(context, notificationId))
             .addAction(buildReplyAction(context, notificationId))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setNumber(GroupChatConversationStore.getUnreadCount(context))
+            .setShortcutId(GroupChatConversationStore.CONVERSATION_ID)
             .build()
 
         NotificationManagerCompat.from(context).notify(notificationId, notification)
@@ -95,7 +104,23 @@ object GroupChatNotificationBuilder {
         )
     }
 
-    private suspend fun buildMessagingStyle(context: Context): NotificationCompat.MessagingStyle {
+    private fun ensureConversationShortcut(context: Context, icon: IconCompat?, person: Person, url: String) {
+        val shortcutIntent = Intent(context, MainActivity::class.java).apply {
+            action = Intent.ACTION_VIEW
+            putExtra("leafmash_url", url)
+            putExtra("leafmash_conversation_id", GroupChatConversationStore.CONVERSATION_ID)
+        }
+        val shortcutBuilder = ShortcutInfoCompat.Builder(context, GroupChatConversationStore.CONVERSATION_ID)
+            .setShortLabel(CONVERSATION_TITLE)
+            .setLongLived(true)
+            .setPerson(person)
+            .setIntent(shortcutIntent)
+            .setCategories(setOf("android.shortcut.conversation"))
+        icon?.let { shortcutBuilder.setIcon(it) }
+        ShortcutManagerCompat.pushDynamicShortcut(context, shortcutBuilder.build())
+    }
+
+    private suspend fun buildMessagingStyle(context: Context): Triple<NotificationCompat.MessagingStyle, Person?, IconCompat?> {
         val mePerson = Person.Builder().setName("You").setKey("leafmash_me").setIcon(DmReplyMessagingService.blankIcon()).build()
         val style = NotificationCompat.MessagingStyle(mePerson)
             .setConversationTitle(CONVERSATION_TITLE)
@@ -105,11 +130,14 @@ object GroupChatNotificationBuilder {
         val unreadCount = GroupChatConversationStore.getUnreadCount(context)
         val historicCount = (messages.size - unreadCount).coerceAtLeast(0)
         val personCache = mutableMapOf<String, Person>()
+        val iconCache = mutableMapOf<String, IconCompat?>()
+        var latestSenderUid: String? = null
 
         suspend fun personFor(senderUid: String, senderName: String): Person {
             personCache[senderUid]?.let { return it }
             val photoUrl = GroupChatConversationStore.getSenderPhotoUrl(context, senderUid)
             val icon = DmAvatarLoader.load(photoUrl)
+            iconCache[senderUid] = icon
             val builder = Person.Builder().setName(senderName).setKey(senderUid).setImportant(true)
             icon?.let { builder.setIcon(it) }
             val person = builder.build()
@@ -119,12 +147,16 @@ object GroupChatNotificationBuilder {
 
         messages.forEachIndexed { index, message ->
             val person = if (message.fromMe) null else personFor(message.senderUid, message.senderName)
+            if (!message.fromMe) latestSenderUid = message.senderUid
             if (index < historicCount) {
                 style.addHistoricMessage(NotificationCompat.MessagingStyle.Message(message.text, message.timestamp, person))
             } else {
                 style.addMessage(message.text, message.timestamp, person)
             }
         }
-        return style
+
+        val representativePerson = latestSenderUid?.let { personCache[it] }
+        val representativeIcon = latestSenderUid?.let { iconCache[it] }
+        return Triple(style, representativePerson, representativeIcon)
     }
 }
