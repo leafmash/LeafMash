@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Build
@@ -26,8 +27,12 @@ object GroupChatNotificationBuilder {
         ensureChannel(context)
 
         val (style, latestSenderPerson, latestSenderIcon) = buildMessagingStyle(context)
+        var largeIconBitmap: Bitmap? = null
         if (latestSenderPerson != null) {
             ensureConversationShortcut(context, latestSenderIcon, latestSenderPerson, url)
+            val latestSenderUid = latestSenderPerson.key
+            val photoUrl = if (latestSenderUid != null) GroupChatConversationStore.getSenderPhotoUrl(context, latestSenderUid) else ""
+            if (photoUrl.isNotBlank()) largeIconBitmap = DmAvatarLoader.loadBitmap(photoUrl)
         }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -40,6 +45,7 @@ object GroupChatNotificationBuilder {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setNumber(GroupChatConversationStore.getUnreadCount(context))
             .setShortcutId(GroupChatConversationStore.CONVERSATION_ID)
+            .apply { largeIconBitmap?.let { setLargeIcon(it) } }
             .build()
 
         NotificationManagerCompat.from(context).notify(notificationId, notification)

@@ -18,11 +18,21 @@ object DmAvatarLoader {
     private const val MAX_DIMENSION = 192
     private const val CONNECT_TIMEOUT_MS = 5000
     private const val READ_TIMEOUT_MS = 5000
-    private val cache = LruCache<String, IconCompat>(20)
+    private val iconCache = LruCache<String, IconCompat>(20)
+    private val bitmapCache = LruCache<String, Bitmap>(20)
 
     suspend fun load(url: String): IconCompat? {
         if (url.isBlank()) return null
-        cache.get(url)?.let { return it }
+        iconCache.get(url)?.let { return it }
+        val bitmap = loadBitmap(url) ?: return null
+        val icon = IconCompat.createWithBitmap(bitmap)
+        iconCache.put(url, icon)
+        return icon
+    }
+
+    suspend fun loadBitmap(url: String): Bitmap? {
+        if (url.isBlank()) return null
+        bitmapCache.get(url)?.let { return it }
         return withContext(Dispatchers.IO) {
             try {
                 val connection = URL(url).openConnection() as HttpURLConnection
@@ -30,12 +40,12 @@ object DmAvatarLoader {
                 connection.readTimeout = READ_TIMEOUT_MS
                 connection.doInput = true
                 connection.connect()
-                val bitmap = connection.inputStream.use { BitmapFactory.decodeStream(it) }
+                val raw = connection.inputStream.use { BitmapFactory.decodeStream(it) }
                 connection.disconnect()
-                if (bitmap == null) return@withContext null
-                val icon = IconCompat.createWithBitmap(circularCrop(downscale(bitmap)))
-                cache.put(url, icon)
-                icon
+                if (raw == null) return@withContext null
+                val cropped = circularCrop(downscale(raw))
+                bitmapCache.put(url, cropped)
+                cropped
             } catch (e: Exception) {
                 null
             }
