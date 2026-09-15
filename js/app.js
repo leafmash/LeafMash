@@ -412,12 +412,12 @@ function openDeepLink(url) {
   const hashPart = hashIndex >= 0 ? url.slice(hashIndex + 1) : url.replace(/^\//, "");
   const parsed = parseHash("#" + hashPart);
   if (!parsed || !routeTitles[parsed.route]) {
-    goToRoute("wall");
+    goToRoute("wall", { replace: true });
     return;
   }
-  if (parsed.route === "user-profile" && parsed.id) openUserProfilePage(parsed.id);
-  else if (parsed.route === "post-detail" && parsed.id) openPostDetailPage(parsed.id);
-  else if (parsed.route === "dm-thread" && parsed.id) openDmThread(parsed.id);
+  if (parsed.route === "user-profile" && parsed.id) openUserProfilePage(parsed.id, { replace: true });
+  else if (parsed.route === "post-detail" && parsed.id) openPostDetailPage(parsed.id, { replace: true });
+  else if (parsed.route === "dm-thread" && parsed.id) openDmThread(parsed.id, { replace: true });
   else goToRoute(parsed.route, { replace: BOTTOM_TAB_ROUTES.has(parsed.route) });
 }
 registerNotificationTapHandler(openDeepLink);
@@ -1070,13 +1070,16 @@ watchAuthState(
       initWriteQueueSync();
       featuresInitialized = true;
     }
-    restoreRouteFromHash();
+    const nativeDeepLink = await consumeNativePendingDeepLink();
+    if (nativeDeepLink) {
+      openDeepLink(nativeDeepLink);
+    } else {
+      restoreRouteFromHash();
+    }
     if (!CapApp && !webBufferPushed) {
       webBufferPushed = true;
       history.pushState({ leafmashRoute: currentRoute }, "", location.hash);
     }
-    const nativeDeepLink = await consumeNativePendingDeepLink();
-    if (nativeDeepLink) openDeepLink(nativeDeepLink);
     initPush({ requestPermission: true });
     initBatteryOptimizationPrompt();
     if (profile && profile.profileIncomplete) {
