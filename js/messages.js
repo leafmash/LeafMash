@@ -161,12 +161,18 @@ function syncMessageChatMode() {
 }
 
 function activateSubtab(name) {
+  const wasClassActive = isClassChatSubtabActive();
   document.querySelectorAll(".msg-subtab-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.msgtab === name);
   });
   subtabPanels.forEach(p => p.classList.toggle("active", p.dataset.msgtabPanel === name));
   syncMessageChatMode();
-  if (name === "class") markClassChatRead();
+  if (name === "class") {
+    markClassChatRead();
+    window.Capacitor?.Plugins?.LeafMashDeepLink?.setActiveConversation({ conversationId: "classChat" }).catch(() => {});
+  } else if (wasClassActive) {
+    window.Capacitor?.Plugins?.LeafMashDeepLink?.clearActiveConversation().catch(() => {});
+  }
 }
 
 function wireSubtabs() {
@@ -553,6 +559,7 @@ function markClassChatRead() {
   classChatLastReadMs = Date.now(); 
   paintClassChatBadge();
   setDoc(doc(db, "classChatReads", myUid), { lastReadAt: serverTimestamp() }, { merge: true }).catch(() => {});
+  window.Capacitor?.Plugins?.LeafMashDeepLink?.clearClassChatNotification().catch(() => {});
 }
 
 function subscribeClassChatRead() {
@@ -1246,6 +1253,9 @@ export function initMessages() {
 }
 
 export function teardownMessages() {
+  if (isClassChatSubtabActive()) {
+    window.Capacitor?.Plugins?.LeafMashDeepLink?.clearActiveConversation().catch(() => {});
+  }
   if (unsubscribeClassChat) unsubscribeClassChat();
   unsubscribeClassChat = null;
   if (unsubscribeClassChatRead) unsubscribeClassChatRead();
