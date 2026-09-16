@@ -1053,12 +1053,17 @@ html[data-theme="dark"], html[data-theme="dark"] body { background: #0b2015; }
 
   .post-stats { @apply flex items-center justify-between gap-2 text-[.76rem] pt-0.5 pb-1; }
   .post-stats.hidden { @apply hidden; }
-  .post-actions { @apply flex items-center gap-2 pt-2.5 mt-1; border-top:1px dashed var(--color-line); }
+  .post-actions { @apply flex items-stretch gap-2.5 pt-3 mt-1.5; border-top:1px dashed var(--color-line); }
+  .post-actions > .reaction-control,
+  .post-actions > .comment-toggle-btn { @apply flex-1 min-w-0; }
+  .reaction-control .reaction-btn { @apply w-full; }
   .post-action-btn {
-    @apply inline-flex items-center gap-1.5 text-[.82rem] font-bold rounded-full transition-colors shrink-0;
-    color: var(--color-ink-soft); background: var(--color-paper-deep); padding:7px 14px 7px 11px;
+    @apply inline-flex items-center justify-center gap-2 text-[.9rem] font-bold rounded-full transition-colors w-full;
+    color: var(--color-ink-soft); background: var(--color-paper-deep); padding:12px 14px;
   }
+  .post-action-btn span { @apply truncate; }
   .post-action-btn:active { background: var(--color-forest-100); }
+  @media (hover:hover) { .post-action-btn:hover { background: var(--color-forest-100); color: var(--color-forest-700); } }
   .leaf-like-btn .leaf-icon { @apply flex transition-transform; }
   .leaf-like-btn.liked { @apply text-white; background: linear-gradient(135deg, var(--color-forest-600), var(--color-forest-800)); }
   .leaf-like-btn.like-pop .leaf-icon { @apply animate-leaf-pop; }
@@ -1074,8 +1079,8 @@ html[data-theme="dark"], html[data-theme="dark"] body { background: #0b2015; }
   .stats-comment-count:hover, .stats-comment-count:active { color: var(--color-forest-700); }
   .stats-comment-count.hidden, .post-like-count.hidden { @apply hidden; }
 
-  .reaction-control { @apply relative shrink-0; }
-  .reaction-btn .reaction-icon { @apply flex items-center justify-center transition-transform; width:18px; height:18px; font-size:14px; line-height:1; overflow:hidden; }
+  .reaction-control { @apply relative; }
+  .reaction-btn .reaction-icon { @apply flex items-center justify-center transition-transform; width:21px; height:21px; font-size:16px; line-height:1; overflow:hidden; }
   .reaction-btn.liked { @apply text-white; background: linear-gradient(135deg, var(--color-forest-600), var(--color-forest-800)); }
   .reaction-btn.like-pop .reaction-icon { @apply animate-leaf-pop; }
   .reaction-icon svg { width:100%; height:100%; display:block; }
