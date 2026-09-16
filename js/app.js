@@ -305,7 +305,6 @@ const routeTitles = {
 };
 
 let currentRoute = "wall";
-let previousRoute = null;
 
 let routeFromMap = {};
 
@@ -378,23 +377,20 @@ function goToRoute(route, { fromPopstate = false, replace = false, state = {} } 
   const historyState = { leafmashRoute: route, ...state, from };
   const hash = buildHash(route, id, from);
   if (!fromPopstate) {
-    if (!replace && !id && route === previousRoute) {
-      previousRoute = priorRoute;
-      history.back();
-    } else if (replace) {
-      previousRoute = priorRoute;
+    if (replace) {
       history.replaceState(historyState, "", hash);
     } else {
-      previousRoute = priorRoute;
       history.pushState(historyState, "", hash);
     }
-  } else {
-    previousRoute = priorRoute;
   }
 }
 function goBackToRoute(route) {
-  if (!route || !routeTitles[route]) { history.back(); return; }
-  goToRoute(route, { state: { from: routeFromMap[route] } });
+  if (window.history.length > 1) {
+    history.back();
+    return;
+  }
+  if (route && routeTitles[route]) goToRoute(route, { replace: true });
+  else goToRoute("wall", { replace: true });
 }
 registerProfilePageRouter(goToRoute);
 registerNotificationsRouter(goToRoute);
@@ -431,7 +427,6 @@ function restoreRouteFromHash() {
   } else {
     goToRoute(parsed.route, { replace: true });
   }
-  previousRoute = null;
 }
 
 document.querySelectorAll(".nav-item[data-route]").forEach(btn => {
@@ -454,8 +449,7 @@ document.getElementById("topbar-settings-btn").addEventListener("click", () => {
 document.getElementById("topbar-back-btn")?.addEventListener("click", () => {
   hapticTap();
   const from = history.state?.from || parseHash(location.hash)?.from;
-  if (from && routeTitles[from]) goBackToRoute(from);
-  else history.back();
+  goBackToRoute(from);
 });
 
 window.addEventListener("popstate", (e) => {
