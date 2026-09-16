@@ -14,7 +14,6 @@ import { initBookmarks, teardownBookmarks } from "./bookmarks.js";
 import { mountSavedView, unmountSavedView } from "./saved.js";
 import { initDirectory, teardownDirectory } from "./directory.js";
 import { initRoutine, teardownRoutine, registerNotificationsRouter } from "./routine.js";
-import { renderAdminVerifiedPage } from "./admin-verified.js";
 import { initDeadlines, teardownDeadlines, markDeadlinesSeen } from "./deadlines.js";
 import { initGlobalSearch, ensureSearchDataLoaded, registerSearchRouter } from "./search.js";
 import { initPresence, teardownPresence } from "./presence.js";
@@ -25,13 +24,31 @@ import {
   escapeHtml, escapeAttr, openModal, closeModal, showToast, setBtnLoading, fullDate,
   avatarInner, nameWithBadge, isAdminEmail, adminBadgeHtml, friendlyError, socialLinksRowHtml, normalizedSocialLinks
 } from "./ui-utils.js";
-import { uploadImage } from "./cloudinary.js";
 import { isAcceptableImageFile, openImageViewer, isImageViewerOpen, closeImageViewer } from "./media-picker.js";
-import { openImageCropper } from "./image-cropper.js";
 import { initPush, unregisterPushToken, registerNotificationTapHandler, consumeNativePendingDeepLink } from "./push.js";
-import { initBatteryOptimizationPrompt } from "./battery-optimization.js";
 import { getThemePreference, setThemePreference, initTheme } from "./theme.js";
 import { checkForcedUpdate } from "./app-update.js";
+
+let _adminVerifiedMod = null;
+function getAdminVerifiedPage() {
+  if (!_adminVerifiedMod) _adminVerifiedMod = import("./admin-verified.js");
+  return _adminVerifiedMod;
+}
+let _imageCropperMod = null;
+function getImageCropper() {
+  if (!_imageCropperMod) _imageCropperMod = import("./image-cropper.js");
+  return _imageCropperMod;
+}
+let _cloudinaryMod = null;
+function getCloudinary() {
+  if (!_cloudinaryMod) _cloudinaryMod = import("./cloudinary.js");
+  return _cloudinaryMod;
+}
+let _batteryOptMod = null;
+function getBatteryOptimization() {
+  if (!_batteryOptMod) _batteryOptMod = import("./battery-optimization.js");
+  return _batteryOptMod;
+}
 
 const CapApp = window.Capacitor?.Plugins?.App;
 const CapStatusBar = window.Capacitor?.Plugins?.StatusBar;
@@ -340,7 +357,7 @@ function goToRoute(route, { fromPopstate = false, replace = false, state = {} } 
 
   if (route === "profile") renderProfile();
   if (route === "settings") renderSettingsPage();
-  if (route === "admin-verified") renderAdminVerifiedPage();
+  if (route === "admin-verified") getAdminVerifiedPage().then(m => m.renderAdminVerifiedPage());
   if (route === "search") ensureSearchDataLoaded();
   if (route === "deadlines") markDeadlinesSeen();
   const restoreY = SCROLL_MEMORY_EXCLUDED_ROUTES.has(route) ? 0 : (scrollPositions[route] || 0);
@@ -785,11 +802,13 @@ function changeProfilePhotoQuick() {
   input.addEventListener("change", async () => {
     const file = input.files?.[0];
     if (!file || !isAcceptableImageFile(file)) return;
+    const { openImageCropper } = await getImageCropper();
     const cropped = await openImageCropper(file);
     if (!cropped) return;
     const photoFile = new File([cropped], "avatar.jpg", { type: "image/jpeg" });
     setProfileAvatarUploading(true);
     try {
+      const { uploadImage } = await getCloudinary();
       const photoURL = await uploadImage(photoFile, { maxDim: 600, quality: 0.85, folder: "leafmash/avatars" });
       await updateProfileDetails({
         name: currentProfile.name,
@@ -924,6 +943,7 @@ function openProfileDetailsModal(isFirstTime = false) {
     photoInput.value = "";
     if (!file) return;
     if (!isAcceptableImageFile(file)) return;
+    const { openImageCropper } = await getImageCropper();
     const cropped = await openImageCropper(file);
     if (!cropped) return;
     selectedPhotoFile = new File([cropped], "avatar.jpg", { type: "image/jpeg" });
@@ -994,6 +1014,7 @@ async function saveProfileDetails(isFirstTime, getSelectedPhotoFile) {
     let photoURL;
     if (selectedPhotoFile) {
       setBtnLoading(btn, true, "Uploading photo…");
+      const { uploadImage } = await getCloudinary();
       photoURL = await uploadImage(selectedPhotoFile, { maxDim: 600, quality: 0.85, folder: "leafmash/avatars" });
       setBtnLoading(btn, true, "Saving…");
     }
@@ -1054,7 +1075,7 @@ watchAuthState(
       history.pushState({ leafmashRoute: currentRoute }, "", location.hash);
     }
     initPush({ requestPermission: true });
-    initBatteryOptimizationPrompt();
+    getBatteryOptimization().then(m => m.initBatteryOptimizationPrompt());
     if (profile && profile.profileIncomplete) {
       openProfileDetailsModal(true);
     }
