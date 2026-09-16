@@ -63,9 +63,6 @@ initPullToRefresh({
 
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 
-const loadingScreen = document.getElementById("loading-screen");
-const loadingLabel = document.getElementById("loading-label");
-const loadingDots = document.querySelector(".loading-dots");
 const authScreen = document.getElementById("auth-screen");
 const appShell = document.getElementById("app-shell");
 
@@ -111,29 +108,6 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") updateOfflineBanner();
 });
 updateOfflineBanner();
-function setLoadingLabel(text) {
-  if (loadingLabel) loadingLabel.textContent = text;
-}
-
-const LOADING_MIN_DISPLAY_MS = 300;
-
-function showLoadingScreen(text) {
-  setLoadingLabel(text);
-  if (loadingDots) loadingDots.classList.remove("is-complete");
-  loadingScreen.classList.add("no-transition");
-  loadingScreen.classList.remove("hidden");
-  void loadingScreen.offsetWidth;
-  loadingScreen.classList.remove("no-transition");
-}
-
-function completeLoadingDots() {
-  if (loadingDots) loadingDots.classList.add("is-complete");
-}
-
-function hideLoadingScreen() {
-  loadingScreen.classList.add("hidden");
-}
-
 let loggingOut = false;
 
 const loginForm = document.getElementById("login-form");
@@ -1046,7 +1020,6 @@ checkForcedUpdate().catch(() => {});
 
 watchAuthState(
   async (user, profile) => {
-    showLoadingScreen("Loading LeafMash");
     authScreen.classList.add("hidden");
     appShell.classList.remove("hidden");
 
@@ -1086,15 +1059,6 @@ watchAuthState(
       openProfileDetailsModal(true);
     }
 
-    // Facebook-style: reveal the app shell right away instead of blocking
-    // on the network/cache. Each section (Wall, Directory, ...) already
-    // shows its own skeleton and fills itself in as its listener reports
-    // data, so there's nothing left for a full-screen loader to wait for.
-    completeLoadingDots();
-    setTimeout(hideLoadingScreen, LOADING_MIN_DISPLAY_MS);
-
-    // Cold-start bookkeeping still happens, just quietly in the background —
-    // it no longer keeps the UI waiting.
     Promise.all([wallReady, directoryReady]).then(([wallConfirmed, directoryConfirmed]) => {
       if (isColdStart && wallConfirmed && directoryConfirmed) {
         markSessionEstablished();
@@ -1128,15 +1092,8 @@ watchAuthState(
     document.querySelectorAll("#google-signin-btn, .google-signin-trigger").forEach(btn => setBtnLoading(btn, false));
 
     if (loggingOut) {
-      showLoadingScreen("Logging out");
-      completeLoadingDots();
-      setTimeout(() => {
-        hideLoadingScreen();
-        setLoadingLabel("Loading LeafMash");
-        loggingOut = false;
-      }, LOADING_MIN_DISPLAY_MS);
-    } else {
-      hideLoadingScreen();
+      loggingOut = false;
+      showToast("Logged out.");
     }
   },
   (message) => {
