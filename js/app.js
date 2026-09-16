@@ -83,6 +83,11 @@ if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 const authScreen = document.getElementById("auth-screen");
 const appShell = document.getElementById("app-shell");
 
+function hideBootSkeleton() {
+  const el = document.getElementById("boot-skeleton");
+  if (el) el.remove();
+}
+
 if (CapSplashScreen) {
   CapSplashScreen.hide({ fadeOutDuration: 300 }).catch(() => {});
 }
@@ -1043,6 +1048,7 @@ watchAuthState(
   async (user, profile) => {
     authScreen.classList.add("hidden");
     appShell.classList.remove("hidden");
+    hideBootSkeleton();
 
     const displayProfile = profile || { name: user.email, email: user.email };
     const composerAvatar = document.getElementById("composer-avatar");
@@ -1089,6 +1095,7 @@ watchAuthState(
   () => {
     appShell.classList.add("hidden");
     authScreen.classList.remove("hidden");
+    hideBootSkeleton();
     history.replaceState({ leafmashAuthScreen: true }, "", location.pathname + location.search);
     scrollPositions = {}; 
     currentRoute = "wall";
