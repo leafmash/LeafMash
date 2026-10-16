@@ -69,13 +69,26 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --stacktrace
 
-      - name: Publish APK as a release
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Prepare APK
+        id: apk
         run: |
           APK=$(find "${{ steps.project.outputs.dir }}/app/build/outputs/apk/release" -name '*.apk' | head -1)
           NAME="LeafMash-native-${{ github.run_number }}.apk"
           cp "$APK" "$NAME"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: leafmash-native-apk
+          path: ${{ steps.apk.outputs.name }}
+
+      - name: Publish APK as a release
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NAME="${{ steps.apk.outputs.name }}"
           gh release create "native-${{ github.run_number }}" "$NAME" \
             --target "$GITHUB_SHA" \
             --title "LeafMash native build ${{ github.run_number }}" \
