@@ -1,0 +1,82 @@
+name: Drop Build
+
+on:
+  push:
+    paths:
+      - "drop/**"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Find latest zip in drop folder
+        id: zip
+        run: |
+          ZIP=$(git log -1 --format= --name-only --diff-filter=AM -- 'drop/*.zip' | head -1)
+          if [ -z "$ZIP" ] || [ ! -f "$ZIP" ]; then
+            echo "No zip found in drop/" >&2
+            exit 1
+          fi
+          echo "path=$ZIP" >> "$GITHUB_OUTPUT"
+
+      - name: Unzip and locate Gradle project
+        id: project
+        run: |
+          mkdir -p "$RUNNER_TEMP/src"
+          unzip -q "${{ steps.zip.outputs.path }}" -d "$RUNNER_TEMP/src"
+          GRADLEW=$(find "$RUNNER_TEMP/src" -name gradlew -not -path '*/node_modules/*' | head -1)
+          if [ -z "$GRADLEW" ]; then
+            echo "gradlew not found inside the zip" >&2
+            exit 1
+          fi
+          echo "dir=$(dirname "$GRADLEW")" >> "$GITHUB_OUTPUT"
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Add google-services.json
+        working-directory: ${{ steps.project.outputs.dir }}
+        run: echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > app/google-services.json
+
+      - name: Decode keystore
+        working-directory: ${{ steps.project.outputs.dir }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/release.keystore
+
+      - name: Build release APK
+        working-directory: ${{ steps.project.outputs.dir }}
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Publish APK as a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK=$(find "${{ steps.project.outputs.dir }}/app/build/outputs/apk/release" -name '*.apk' | head -1)
+          NAME="LeafMash-native-${{ github.run_number }}.apk"
+          cp "$APK" "$NAME"
+          gh release create "native-${{ github.run_number }}" "$NAME" \
+            --target "$GITHUB_SHA" \
+            --title "LeafMash native build ${{ github.run_number }}" \
+            --notes "Built from ${{ steps.zip.outputs.path }}"
