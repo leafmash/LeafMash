@@ -80,7 +80,7 @@ service cloud.firestore {
     match /activity/{activityId} {
       allow read: if isSignedIn() && (
         isAdmin() ||
-        !(resource.data.type in ["comment", "reply", "like", "comment-like", "mention"]) ||
+        !(resource.data.type in ["comment", "reply", "like", "comment-like", "mention", "story-like", "verified"]) ||
         resource.data.targetUid == request.auth.uid ||
         resource.data.actorUid == request.auth.uid
       );
@@ -119,7 +119,7 @@ service cloud.firestore {
     match /stories/{storyId} {
       function storyCreateValid() {
         let d = request.resource.data;
-        return d.keys().hasOnly(["authorUid", "imageUrl", "caption", "createdAt", "expiresAt", "viewedBy"]) &&
+        return d.keys().hasOnly(["authorUid", "imageUrl", "caption", "createdAt", "expiresAt", "viewedBy", "likedBy"]) &&
           d.authorUid == request.auth.uid &&
           d.imageUrl is string &&
           d.imageUrl.size() < 600 &&
@@ -131,7 +131,8 @@ service cloud.firestore {
           d.expiresAt > request.time &&
           d.expiresAt <= request.time + duration.value(25, "h") &&
           d.viewedBy is list &&
-          d.viewedBy.size() == 0;
+          d.viewedBy.size() == 0 &&
+          (!("likedBy" in d) || (d.likedBy is list && d.likedBy.size() == 0));
       }
       function viewOnlyUpdate() {
         return onlyChangedFields(["viewedBy"]) &&
@@ -139,9 +140,18 @@ service cloud.firestore {
           request.resource.data.viewedBy.hasAll(resource.data.viewedBy) &&
           request.resource.data.viewedBy.toSet().difference(resource.data.viewedBy.toSet()).hasOnly([request.auth.uid]);
       }
+      function likeOnlyUpdate() {
+        let before = ("likedBy" in resource.data) ? resource.data.likedBy : [];
+        return onlyChangedFields(["likedBy"]) &&
+          resource.data.authorUid != request.auth.uid &&
+          request.resource.data.likedBy is list &&
+          request.resource.data.likedBy.size() <= before.size() + 1 &&
+          request.resource.data.likedBy.toSet().difference(before.toSet()).hasOnly([request.auth.uid]) &&
+          before.toSet().difference(request.resource.data.likedBy.toSet()).hasOnly([request.auth.uid]);
+      }
       allow read: if isSignedIn();
       allow create: if isSignedIn() && storyCreateValid();
-      allow update: if isSignedIn() && viewOnlyUpdate();
+      allow update: if isSignedIn() && (viewOnlyUpdate() || likeOnlyUpdate());
       allow delete: if isOwner(resource.data.authorUid) || isAdmin();
     }
 
